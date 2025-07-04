@@ -1835,8 +1835,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.navigator.standalone) {
         document.body.classList.add('pwa-standalone');
     }
+    const sim = new Simulator();
     enforceLandscape();
     window.addEventListener('orientationchange', enforceLandscape);
     window.addEventListener('resize', enforceLandscape);
-    new Simulator();
 });
