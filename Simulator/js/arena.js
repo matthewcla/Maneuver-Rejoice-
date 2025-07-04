@@ -932,7 +932,7 @@ class Simulator {
 
         // --- Range ring labels ---
         ctx.fillStyle = this.radarFaintGreen;
-        ctx.font = `${Math.max(11, radius * 0.038)}px 'Share Tech Mono', monospace`;
+        ctx.font = `${Math.max(11, radius * 0.038)}px 'IBM Plex Sans Mono', monospace`;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         for (let i = 1; i <= 3; i++) {
@@ -969,7 +969,7 @@ class Simulator {
     }
 
     drawRangeRings(center, radius) { this.ctx.strokeStyle = this.radarFaintGreen; this.ctx.lineWidth = 0.9; this.ctx.beginPath(); this.ctx.arc(center, center, radius, 0, 2 * Math.PI); this.ctx.stroke(); for (let i = 1; i < 3; i++) { this.ctx.beginPath(); this.ctx.arc(center, center, radius * (i / 3), 0, 2 * Math.PI); this.ctx.stroke(); } }
-    drawRangeLabels(center, radius) { this.ctx.fillStyle = this.radarFaintGreen; this.ctx.font = `${Math.max(11, radius * 0.038)}px 'Share Tech Mono',monospace`; this.ctx.textAlign = 'left'; this.ctx.textBaseline = 'middle'; for (let i = 1; i <= 3; i++) { const ringRadius = radius * (i / 3); const range = this.maxRange * (i / 3); this.ctx.fillText(range.toFixed(1), center + ringRadius + LABEL_OFFSET_PX, center); } }
+    drawRangeLabels(center, radius) { this.ctx.fillStyle = this.radarFaintGreen; this.ctx.font = `${Math.max(11, radius * 0.038)}px 'IBM Plex Sans Mono',monospace`; this.ctx.textAlign = 'left'; this.ctx.textBaseline = 'middle'; for (let i = 1; i <= 3; i++) { const ringRadius = radius * (i / 3); const range = this.maxRange * (i / 3); this.ctx.fillText(range.toFixed(1), center + ringRadius + LABEL_OFFSET_PX, center); } }
 
     drawOwnShipIcon(center, radius) {
         this.ctx.strokeStyle = this.radarGreen;
@@ -1066,7 +1066,7 @@ class Simulator {
         this.ctx.lineTo(endX, endY);
         this.ctx.stroke();
         this.ctx.fillStyle = this.radarGreen;
-        this.ctx.font = `${Math.max(11, radius * 0.038)}px 'Share Tech Mono', monospace`;
+        this.ctx.font = `${Math.max(11, radius * 0.038)}px 'IBM Plex Sans Mono', monospace`;
         this.ctx.textAlign = 'left';
         this.ctx.textBaseline = 'top';
         if (this.showTrackIds) {
@@ -1154,7 +1154,7 @@ class Simulator {
         this.ctx.save();
         this.ctx.strokeStyle = this.radarFaintGreen;
         this.ctx.fillStyle   = this.radarFaintGreen;
-        this.ctx.font        = `${Math.max(12, radius * 0.08)}px 'Share Tech Mono', monospace`;
+        this.ctx.font        = `${Math.max(12, radius * 0.08)}px 'IBM Plex Sans Mono', monospace`;
         this.ctx.textAlign   = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('W', wX, wY);
@@ -1765,7 +1765,7 @@ class Simulator {
     prepareStaticStyles() {
         this.ctx.strokeStyle = this.radarFaintGreen;
         this.ctx.fillStyle   = this.radarFaintGreen;
-        this.ctx.font        = `${Math.max(12, this.canvas.width * 0.04)}px 'Share Tech Mono', monospace`;
+        this.ctx.font        = `${Math.max(12, this.canvas.width * 0.04)}px 'IBM Plex Sans Mono', monospace`;
     }
 }
 
