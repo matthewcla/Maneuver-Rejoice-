@@ -30,6 +30,25 @@
     justify-content: center;
     text-align: center;
     padding: 2rem;
+    flex-direction: column;
+}
+#ios-favicon {
+    margin-bottom: 20px;
+    width: 64px;
+}
+.ios-buttons {
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+}
+.ios-buttons .control-btn {
+    width: auto;
+}
+#ios-goto-btn {
+    background-color: #8B0000;
+    border-color: #8B0000;
+    color: #fff;
+    margin-right: 20px;
 }
 body.no-install-ios #iosTip {
     display: flex;

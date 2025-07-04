@@ -42,8 +42,22 @@
     <link rel="stylesheet" href="./css/install.css"/>
 </head>
 <body>
-    <div id="orientation-warning">Rotate device to landscape</div>
-    <div id="iosTip">Tap ‘Share’ → ‘Add to Home Screen’ to install.</div>
+    <div id="orientation-warning">
+        <div>Rotate device to landscape</div>
+        <svg id="rotate-phone-icon" xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">
+            <rect x="20" y="12" width="24" height="40" rx="4"/>
+            <path d="M12 32h-8m0 0l4-4m-4 4l4 4"/>
+            <path d="M52 32h8m0 0l-4-4m4 4l-4 4"/>
+        </svg>
+    </div>
+    <div id="iosTip">
+        <img id="ios-favicon" src="favicons.svg" alt="Maneuver icon">
+        <div>Tap ‘Share’ → ‘Add to Home Screen’ to install.</div>
+        <div id="ios-buttons" class="ios-buttons">
+            <button id="ios-goto-btn" class="control-btn tip-btn">No - Go to Web App</button>
+            <button id="ios-share-btn" class="control-btn tip-btn selected">Share</button>
+        </div>
+    </div>
 
 <div id="drag-tooltip"></div>
 <div id="order-tooltip"></div>

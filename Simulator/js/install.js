@@ -5,8 +5,10 @@
 let deferredPrompt = null; // event saved for triggering later
 
 // Element references
-const installBtn = document.getElementById('btnInstall');
-const iosTip     = document.getElementById('iosTip');
+const installBtn   = document.getElementById('btnInstall');
+const iosTip       = document.getElementById('iosTip');
+const iosShareBtn  = document.getElementById('ios-share-btn');
+const iosGotoBtn   = document.getElementById('ios-goto-btn');
 
 // Platform detection helpers
 const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -46,6 +48,26 @@ installBtn?.addEventListener('click', async () => {
     console.log('User response to install prompt:', outcome);
     deferredPrompt = null;
     installBtn.classList.remove('show');
+});
+
+iosShareBtn?.addEventListener('click', async () => {
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Maneuver Simulator',
+                url: window.location.href
+            });
+        } catch (e) {
+            console.log('Share cancelled');
+        }
+    }
+    document.body.classList.remove('no-install-ios');
+    iosTip?.remove();
+});
+
+iosGotoBtn?.addEventListener('click', () => {
+    document.body.classList.remove('no-install-ios');
+    iosTip?.remove();
 });
 
 // Cleanup when installation finishes
