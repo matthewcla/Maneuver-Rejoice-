@@ -955,7 +955,7 @@ class Simulator {
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, size, size);
         ctx.strokeStyle = this.radarFaintGreen;
-        ctx.lineWidth = 0.9;
+        ctx.lineWidth = 2.7;
 
         ctx.beginPath();
         ctx.arc(center, center, radius, 0, 2 * Math.PI);
@@ -1005,7 +1005,7 @@ class Simulator {
         ctx.restore();
     }
 
-    drawRangeRings(center, radius) { this.ctx.strokeStyle = this.radarFaintGreen; this.ctx.lineWidth = 0.9; this.ctx.beginPath(); this.ctx.arc(center, center, radius, 0, 2 * Math.PI); this.ctx.stroke(); for (let i = 1; i < 3; i++) { this.ctx.beginPath(); this.ctx.arc(center, center, radius * (i / 3), 0, 2 * Math.PI); this.ctx.stroke(); } }
+    drawRangeRings(center, radius) { this.ctx.strokeStyle = this.radarFaintGreen; this.ctx.lineWidth = 2.7; this.ctx.beginPath(); this.ctx.arc(center, center, radius, 0, 2 * Math.PI); this.ctx.stroke(); for (let i = 1; i < 3; i++) { this.ctx.beginPath(); this.ctx.arc(center, center, radius * (i / 3), 0, 2 * Math.PI); this.ctx.stroke(); } }
     drawRangeLabels(center, radius) { this.ctx.fillStyle = this.radarFaintGreen; this.ctx.font = `${Math.max(11, radius * 0.038)}px 'IBM Plex Sans Mono',monospace`; this.ctx.textAlign = 'left'; this.ctx.textBaseline = 'middle'; for (let i = 1; i <= 3; i++) { const ringRadius = radius * (i / 3); const range = this.maxRange * (i / 3); this.ctx.fillText(range.toFixed(1), center + ringRadius + LABEL_OFFSET_PX, center); } }
 
     drawOwnShipIcon(center, radius) {
