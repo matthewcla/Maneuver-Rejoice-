@@ -290,7 +290,13 @@ Questions?  >>  Aheadflank.ai@gmail.com
                 </div>
                 <!-- Data Panels for selected track will be dynamically inserted here -->
                 <div class="data primary" id="track-data-container">
-                        <p class="font-bold tracking-wide data-title">Track <span id="track-id">--</span></p>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <p class="font-bold tracking-wide data-title mb-0">Track <span id="track-id">--</span></p>
+                        <div id="track-controls" class="d-flex flex-row ms-auto" style="gap:13px;">
+                            <button id="btn-add-track"  title="Add new track">+</button>
+                            <button id="btn-drop-track" title="Drop this track">&ndash;</button>
+                        </div>
+                    </div>
                     <div class="d-flex flex-column gap-1">
                         <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Brg</span><span id="track-brg" class="data-value editable">--</span></div>
                         <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Rng</span><span id="track-rng" class="data-value editable">--</span></div>
