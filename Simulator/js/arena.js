@@ -31,6 +31,27 @@ function solveCPA(own, tgt) {
     return { t: tCPA, d: dCPA };
 }
 
+const fsApi = {
+  request(el = document.documentElement) {
+    return  el.requestFullscreen?.()     ||
+            el.webkitRequestFullscreen?.()||
+            el.mozRequestFullScreen?.()  ||
+            el.msRequestFullscreen?.();
+  },
+  exit() {
+    return  document.exitFullscreen?.()   ||
+            document.webkitExitFullscreen?.()||
+            document.mozCancelFullScreen?.() ||
+            document.msExitFullscreen?.();
+  },
+  isActive() {
+    return document.fullscreenElement     ||
+           document.webkitFullscreenElement||
+           document.mozFullScreenElement   ||
+           document.msFullscreenElement;
+  }
+};
+
 class ScenarioGenerator {
     constructor(cfg){
         this.cfg = cfg;
@@ -499,8 +520,8 @@ class Simulator {
         // Fullscreen toggle
         this.btnFullscreen?.addEventListener('click', () => this.toggleFullScreen());
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.fullscreenElement) {
-                document.exitFullscreen();
+            if (e.key === 'Escape' && fsApi.isActive()) {
+                fsApi.exit();
             }
         });
 
@@ -528,6 +549,10 @@ class Simulator {
                 this.dragTooltip.style.display = 'none';
             });
         });
+
+        ['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange']
+            .forEach(evt => document.addEventListener(evt, () => this._syncFullscreenUI()));
+        this._syncFullscreenUI();
 
         // Editable fields
         this.dataPane?.addEventListener('click', (e) => {
@@ -1675,12 +1700,23 @@ class Simulator {
         this.markSceneDirty();
     }
 
-    toggleFullScreen() {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen?.();
-        } else {
-            document.exitFullscreen?.();
+    async toggleFullScreen() {
+        try {
+            if (!fsApi.isActive()) {
+                await fsApi.request();
+            } else {
+                await fsApi.exit();
+            }
+        } catch (err) {
+            console.error('Fullscreen error', err);
         }
+    }
+
+    _syncFullscreenUI() {
+        const entering = !!fsApi.isActive();
+        this.btnFullscreen.setAttribute('data-state', entering ? 'exit' : 'enter');
+        this.btnFullscreen.title     = entering ? 'Exit full screen' : 'Enter full screen';
+        this.btnFullscreen.ariaLabel = this.btnFullscreen.title;
     }
 
     setupRandomScenario(){

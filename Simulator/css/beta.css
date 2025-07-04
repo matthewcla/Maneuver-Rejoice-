@@ -502,7 +502,7 @@ details[open] > summary.collapsible-summary::before {
     padding: 0;
     background: transparent;
     border: none;
-    color: var(--radar-green);
+    color: var(--radar-faint-green);
     z-index: 4;
 }
 
@@ -550,3 +550,7 @@ details[open] > summary.collapsible-summary::before {
 #settings-drawer input[type="checkbox"] {
     accent-color: var(--radar-green);
 }
+
+/* Optional visual cue when in full-screen */
+:fullscreen #btn-fullscreen svg { transform: rotate(45deg); }
+:-webkit-full-screen #btn-fullscreen svg { transform: rotate(45deg); }
