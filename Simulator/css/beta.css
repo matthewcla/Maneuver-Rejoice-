@@ -563,3 +563,19 @@ body.pwa-standalone #btn-fullscreen {
 /* Optional visual cue when in full-screen */
 :fullscreen #btn-fullscreen svg { transform: rotate(45deg); }
 :-webkit-full-screen #btn-fullscreen svg { transform: rotate(45deg); }
+
+#orientation-warning {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+    color: var(--radar-green);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: "Share Tech Mono", monospace;
+}
+body.portrait #orientation-warning {
+    display: flex;
+}

@@ -273,6 +273,7 @@ class Simulator {
         this.btnFullscreen = document.getElementById('btn-fullscreen');
         this.btnSettings = document.getElementById('btn-settings');
         this.settingsDrawer = document.getElementById('settings-drawer');
+        this.btnInstall = document.getElementById('btn-install');
         this.chkPolarPlot = document.getElementById('toggle-polar-plot');
         this.chkTrackIds = document.getElementById('toggle-track-ids');
 
@@ -437,10 +438,9 @@ class Simulator {
                     buttons: 1,
                     pointerType: 'touch'
                 });
-                e.preventDefault();
             };
-            this.canvas?.addEventListener('touchstart', wrap(this.handlePointerDown), { passive: false });
-            this.canvas?.addEventListener('touchmove', wrap(this.handlePointerMove), { passive: false });
+            this.canvas?.addEventListener('touchstart', wrap(this.handlePointerDown));
+            this.canvas?.addEventListener('touchmove', wrap(this.handlePointerMove));
             this.canvas?.addEventListener('touchend', wrap(this.handlePointerUp));
             this.canvas?.addEventListener('touchcancel', wrap(this.handlePointerUp));
         } else {
@@ -1806,9 +1806,43 @@ class Simulator {
 }
 
 // --- Application Entry Point ---
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+});
+
+function enforceLandscape() {
+    const warning = document.getElementById('orientation-warning');
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    if (!isMobile || window.matchMedia('(orientation: landscape)').matches) {
+        document.body.classList.remove('portrait');
+        if (warning) warning.style.display = 'none';
+    } else {
+        document.body.classList.add('portrait');
+        if (warning) warning.style.display = 'flex';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     if (window.navigator.standalone) {
         document.body.classList.add('pwa-standalone');
+    }
+    enforceLandscape();
+    window.addEventListener('orientationchange', enforceLandscape);
+    window.addEventListener('resize', enforceLandscape);
+    const installBtn = document.getElementById('btn-install');
+    if (installBtn) {
+        installBtn.addEventListener('click', async () => {
+            if (deferredInstallPrompt) {
+                deferredInstallPrompt.prompt();
+                deferredInstallPrompt = null;
+            } else if (navigator.share) {
+                try { await navigator.share({ url: location.href }); } catch (err) {}
+            } else {
+                alert("Use your browser's share menu to add this page to your home screen.");
+            }
+        });
     }
     new Simulator();
 });
