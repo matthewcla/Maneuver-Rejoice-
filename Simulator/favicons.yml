@@ -1,0 +1,20 @@
+name: Build PNG favicons
+on:
+  push:
+    paths: [favicon.svg, .github/workflows/favicons.yml]
+
+jobs:
+  png:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Convert SVG to PNGs
+        run: |
+          sudo apt-get update && sudo apt-get install -y imagemagick
+          convert -background none favicon.svg -resize 32x32 favicon-32.png
+          convert -background none favicon.svg -resize 16x16 favicon-16.png
+      - name: Commit PNGs back
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "CI: add PNG favicon fallbacks"
+

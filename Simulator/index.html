@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maneuver: Simulator</title>
+    <link rel="icon" type="image/svg+xml" href="favicons.svg">
+    
+    <!-- Bootstrap CSS for styling -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet">
+
+    <script>
+        // Mobile viewport height fix
+        (function () {
+            function setVh() {
+                const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                document.documentElement.style.setProperty('--vh', `${height * 0.01}px`);
+            }
+            setVh();
+            window.addEventListener('resize', setVh);
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', setVh);
+            }
+        })();
+    </script>
+    
+    <!-- Google Fonts for digital-style typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- <style>
+
+    </style> -->
+    <link rel="stylesheet" href="./css/beta.css"/>
+</head>
+<body>
+
+<div id="drag-tooltip"></div>
+<div id="order-tooltip"></div>
+
+<div id="mobile-blocker" class="mobile-blocker">
+  Maneuver is currently not compatible with cell-phone browsers. <br> <br>
+  Please open this page on a laptop, desktop, or tablet. <br> <br>
+  Questions? >> AheadFlank.ai@gmail.com
+</div>
+
+	<!-- Terms of Service Modal -->
+<div id="tos-modal" class="tos-modal">
+  <pre id="tos-content" class="tos-content">
+User Agreement
+
+Maneuver — Comprehensive User Agreement & Terms of Service
+
+Effective Date: June 25, 2025
+
+PLEASE READ THIS AGREEMENT CAREFULLY. By downloading, installing, accessing, or using the "Maneuver" application, including any associated software, website, or service (collectively, the “Services”), you agree to be bound by this User Agreement and Terms of Service (the “Agreement”).
+
+This Agreement is a legally binding contract between you ("User," "you") and SpecK Innovations LLC ("we," "us," "our"). If you do not agree to all terms and conditions, do not access or use the Services.
+
+1. CRITICAL SAFETY WARNING: FOR SIMULATION & EDUCATIONAL USE ONLY
+
+You expressly acknowledge, understand, and agree that the Maneuver application is NOT a certified navigational instrument. It is designed and intended for educational, entertainment, and simulation purposes ONLY.
+
+- DO NOT USE FOR REAL-WORLD NAVIGATION: You shall not, under any circumstances, use the App for actual navigation, collision avoidance, vessel operation, or any purpose where its failure, inaccuracy, or malfunction could lead to death, personal injury, or severe physical, environmental, or property damage.
+- NO RELIANCE ON SIMULATED DATA: All data displayed within the App, including but not limited to radar plots, vessel positions, courses, speeds, and Closest Point of Approach (CPA) calculations, is simulated. It does not reflect real-world conditions and must not be relied upon for making navigational decisions.
+- ALWAYS USE OFFICIAL EQUIPMENT: Safe marine navigation requires the use of approved, properly functioning, and certified navigational equipment (e.g., SOLAS-compliant RADAR, AIS, GPS, official electronic or paper charts). The App is not a substitute for such equipment or for prudent seamanship.
+
+2. License Grant & Restrictions
+
+- License: Subject to your full compliance with this Agreement, we grant you a limited, revocable, non-exclusive, non-transferable license to access and use the Services solely for your personal, non-commercial, and educational purposes.
+- Restrictions: You may not:
+    - Reverse-engineer, decompile, or otherwise attempt to discover the source code of the Services.
+    - Copy, modify, or create derivative works based on the Services.
+    - Resell, sublicense, lease, or otherwise distribute the Services.
+    - Use the Services for any high-risk, life-critical, or commercial activity.
+
+3. User Accounts & Security
+
+- Accurate Information: If account registration is required, you agree to provide complete and accurate information and to keep it updated.
+- Credentials: You are solely responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must notify us immediately of any unauthorized use.
+
+4. Intellectual Property
+
+All software, documentation, trademarks, logos, and other materials provided as part of the Services are and remain the exclusive property of SpecK Innovations LLC and its licensors. No rights are granted except for the limited license expressly set forth herein.
+
+5. Disclaimer of All Warranties
+
+THE SERVICES ARE PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS, WITHOUT ANY WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED. TO THE FULLEST EXTENT PERMISSIBLE UNDER APPLICABLE LAW, WE DISCLAIM ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO:
+
+- WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+- WARRANTIES THAT THE SERVICES WILL BE UNINTERRUPTED, ERROR-FREE, SECURE, OR FREE FROM VIRUSES OR OTHER HARMFUL COMPONENTS.
+- WARRANTIES REGARDING THE ACCURACY, RELIABILITY, COMPLETENESS, OR TIMELINESS OF THE SIMULATED DATA OR CALCULATIONS WITHIN THE SERVICES.
+
+6. Limitation of Liability & Waiver of Claims
+
+IN CONSIDERATION FOR BEING PERMITTED TO USE THE SERVICES, YOU HEREBY AGREE TO THE FOLLOWING:
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT WILL SPECK INNOVATIONS LLC, ITS AFFILIATES, EMPLOYEES, AGENTS, OR SUCCESSORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF LIFE, PERSONAL INJURY, PROPERTY DAMAGE, LOSS OF PROFITS, REVENUES, DATA, OR GOODWILL, ARISING OUT OF OR IN CONNECTION WITH THE SERVICES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+OUR AGGREGATE LIABILITY SHALL NOT EXCEED THE GREATER OF (A) AMOUNTS PAID BY YOU TO US IN THE 12 MONTHS PRECEDING THE CLAIM OR (B) ONE HUNDRED U.S. DOLLARS (USD $100).
+
+YOU HEREBY KNOWINGLY AND VOLUNTARILY WAIVE, RELEASE, AND DISCHARGE SPECK INNOVATIONS LLC FROM ANY AND ALL CLAIMS, DEMANDS, OR CAUSES OF ACTION THAT YOU MAY NOW HAVE OR HEREAFTER HAVE, KNOWN OR UNKNOWN, ARISING OUT OF OR IN ANY WAY CONNECTED WITH YOUR USE OF THE SERVICES.
+
+7. Assumption of Risk & Indemnification
+
+- Assumption of Risk: You voluntarily assume all risks, known and unknown, associated with using the Services, including the risk of relying on simulated data for real-world decisions.
+- Indemnification: You agree to indemnify, defend, and hold harmless SpecK Innovations LLC from any claims, damages, liabilities, and expenses (including reasonable attorneys’ fees) arising from your use of the Services or your breach of this Agreement.
+
+8. Termination
+
+We may suspend or terminate your access to the Services immediately and without notice for any material breach of this Agreement, for any legal requirement, or to mitigate a security risk. Upon termination, your license to use the Services ceases immediately.
+
+9. Governing Law & Dispute Resolution
+
+- Governing Law: This Agreement shall be governed by and construed in accordance with the laws of the State of California, USA, without regard to its conflict of law principles.
+- Arbitration: Any dispute, claim, or controversy arising from or relating to this Agreement shall be finally settled by binding arbitration administered by the American Arbitration Association under its Commercial Arbitration Rules.
+- Class Action Waiver: To the fullest extent permitted by law, you and SpecK Innovations LLC agree that any dispute resolution proceedings will be conducted only on an individual basis and not in a class, consolidated, or representative action.
+
+10. General Provisions
+
+- Entire Agreement: This Agreement constitutes the entire agreement between you and SpecK Innovations LLC regarding the Services.
+- Modifications: We reserve the right to modify this Agreement at any time. Your continued use of the App after any such change constitutes your acceptance of the new Agreement.
+- Severability & Waiver: If any provision is held invalid, remaining provisions remain in full force. Failure to enforce any right is not a waiver of future enforcement.
+- Assignment: You may not assign this Agreement without our prior written consent. We may assign it freely.
+- Contact Information: Legal notices must be sent to: SpecK Innovations LLC, Email: aheadflank.ai@gmail.com
+  </pre>
+  <button id="tos-accept-btn" class="control-btn selected">ACCEPT</button>
+</div>
+
+<!-- Help Modal -->
+<div id="help-modal" class="help-modal">
+  <button id="help-close-btn" class="control-btn selected">CLOSE</button>
+  <pre class="help-modal-text">
+
+**Maneuver Simulator Tutorial**
+
+Questions?  >>  Aheadflank.ai@gmail.com
+
+//Radar Display//
+
+> The circular radar shows your ship at the center.
+
+> Click or tap a track to select it.
+
+> Change the course or speed of your ship, or a track by dragging and dropping the tip of it's vector.
+
+> Change the bearing, range of a track by dragging and dropping the track symbol.
+
+> When enabled, change the direction of True Wind by dragging and dropping the "W" symbol.
+
+> When enabled, change the speed of True Wind by dragging and dropping the tip of it's vector.
+
+
+//Track Controls//
+
+> Play/Pause starts or stops the scenario.
+
+> Fast Forward and Rewind cycle simulation speed at 25x and 50x.
+
+> + / - add or drop tracks.
+
+
+> WIND, RM V and CPA toggle wind, relative motion vectors/data and CPA data.
+
+> Vector Time cycles 3/15/30 min and Range cycles 3/6/12/24 nm.
+
+
+//Data Panels//
+
+> Right side panels show own ship, selected track, relative motion and CPA.
+
+> Panels update as the simulation runs.
+
+  </pre>
+</div>
+
+<script>
+	/* ✧✧✧ 2️⃣  DEVICE-GUARD SCRIPT ✧✧✧ */
+	(function () {
+	  const PHONE_MAX_WIDTH = 768;
+	  const blocker = document.getElementById('mobile-blocker');
+	  const root = document.documentElement;
+
+	  function isPhoneSized() {
+	    return window.innerWidth <= PHONE_MAX_WIDTH;
+	  }
+
+	  function isPhoneUserAgent() {
+	    const ua = navigator.userAgent;
+	    const isTablet = /iPad|Tablet/i.test(ua);
+	    if (isTablet) return false;
+	    return /Android.*Mobile|iPhone|iPod|IEMobile|BlackBerry/i.test(ua);
+	  }
+
+	  function updateBlocker() {
+	    const phone = isPhoneSized() || isPhoneUserAgent();
+	    blocker.style.display = phone ? 'flex' : 'none';
+	    root.style.overflow = phone ? 'hidden' : '';
+	  }
+
+	  updateBlocker();
+	  window.addEventListener('resize', updateBlocker);
+	})();
+</script>
+
+<script>
+  // Terms of Service modal logic
+  (function () {
+    const modal = document.getElementById('tos-modal');
+    const acceptBtn = document.getElementById('tos-accept-btn');
+    const root = document.documentElement;
+    const accepted = localStorage.getItem('userAgreementAccepted');
+    if (!accepted) {
+      modal.style.display = 'flex';
+      root.style.overflow = 'hidden';
+    }
+    acceptBtn.addEventListener('click', () => {
+      modal.style.display = 'none';
+      root.style.overflow = '';
+      const time = new Date().toISOString();
+      localStorage.setItem('userAgreementAccepted', 'true');
+      localStorage.setItem('userAgreementAcceptedTime', time);
+      console.log('User agreement accepted at', time);
+    });
+  })();
+</script>
+    <main class="sim-radar">
+	    <section id="simulator">
+            <section id="header">
+                <section id="logo">
+                    Maneuver<br/>
+                    <span>Beta</span>
+                </section>
+                <section id="controls">
+                    <button id="btn-vector-time" class="radar-control-btn selected" data-tooltip="Toggle Vector Time (3, 15, 30 min)">15 min</button>
+                    <button id="btn-range" class="radar-control-btn selected" data-tooltip="Toggle Radar Range (3, 6, 12, 24 nm)">12 nm</button>
+                </section>
+                
+            </section>
+            <!-- Center Pane: Radar -->
+            <section id="radar-wrapper" class="d-flex align-items-center justify-content-center">
+                <div id="radar-container" class="d-flex align-items-center justify-content-center">
+                    <canvas id="radarCanvas"></canvas>
+              </div>
+           </section>
+        </section>
+        <!-- Right Pane: Data Panel -->
+        <section id="right-pane" class="d-flex flex-column text-radar-green">
+            <section id="sim-panel">
+                <div id="sim-clock" class="text-center">00:00:00</div>
+                <span class="w-100 border-top border-secondary"></span>
+                <div id="sim-controls">
+                    <!-- Simulation Controls -->
+                    <button id="btn-rev" class="sim-control-btn unselected" data-tooltip="Rewind: 25x, 50x">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            style="width:1em;height:1em;margin:auto;"
+                            fill="currentColor" viewBox="0 0 24 24">
+                            <svg xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;margin:auto;" fill="currentColor" viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z" transform="translate(24, 24) rotate(180)"/></svg>
+                        </svg>
+                        <span id="rev-speed-indicator" class="position-absolute d-none" style="bottom:0; right:0.25rem; font-size:0.75rem;"></span>
+                    </button>
+                    <button id="btn-play-pause" class="sim-control-btn selected" data-tooltip="Play/Pause Simulation">
+                        <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" class="d-none" style="width:1em;height:1em;margin:auto;" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;margin:auto;" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
+                    <button id="btn-ff" class="control-btn unselected " data-tooltip="Fast Forward: 25x, 50x">
+                        <svg xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;margin:auto;" fill="currentColor" viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+                        <span id="ff-speed-indicator" class="position-absolute d-none" style="bottom:0; right:0.25rem; font-size:0.75rem;"></span>
+                    </button>
+                </div>
+            </section>
+            <!-- New Scenario Button -->
+                <button id="btn-scen" class="sim-control-btn new selected" data-tooltip="Generate New Scenario">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;margin:auto;" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                    </svg> New scene
+                </button>
+            <div id="data-pane" class="d-flex flex-column" >
+                <!-- OwnShip Data -->
+                <div class="data primary" id="ownship-data-container">
+                    <p class="font-bold tracking-wide data-title">OwnShip</p>
+                    <div class="d-flex flex-column gap-1">
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Crs</span><span id="ownship-crs" class="data-value editable"></span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Spd</span><span id="ownship-spd" class="data-value editable"></span></div>
+                    </div>
+                </div>
+                <!-- Data Panels for selected track will be dynamically inserted here -->
+                <div class="data primary" id="track-data-container">
+                        <p class="font-bold tracking-wide data-title">Track <span id="track-id">--</span></p>
+                    <div class="d-flex flex-column gap-1">
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Brg</span><span id="track-brg" class="data-value editable">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Rng</span><span id="track-rng" class="data-value editable">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Crs</span><span id="track-crs" class="data-value editable">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Spd</span><span id="track-spd" class="data-value editable">--</span></div>
+                    </div>
+                </div>
+                <details class="data secondary collapsible-panel" id="cpa-data-container">
+                    <summary class="collapsible-summary" data-tooltip="Show/Hide CPA Data&#10;&amp; Radar Elements">CPA</summary>
+                    <div class="d-flex flex-column gap-1">
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Brg</span><span id="cpa-brg" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Rng</span><span id="cpa-rng" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Time</span><span id="cpa-time" class="data-value text-end">--</span></div>
+                    </div>
+                </details>
+                <!-- <div id="cpa-data-container">
+                        <p class="font-bold tracking-wide data-title">CPA</p>
+                    <div class="d-flex flex-column gap-1">
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Brg</span><span id="cpa-brg" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Rng</span><span id="cpa-rng" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Time</span><span id="cpa-time" class="data-value text-end">--</span></div>
+                    </div>
+                </div> -->
+                <details class="data secondary collapsible-panel" id="rm-data-container">
+                    <summary class="collapsible-summary" data-tooltip="Show/Hide RM Data&#10;&amp; Radar Elements">Rel Motion</summary>
+                    <div class="d-flex flex-column gap-1">
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Direction RM</span><span id="rm-dir" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Spd RM</span><span id="rm-spd" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Brg Rate</span><span id="rm-rate" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Tgt Angle</span><span id="rm-angle" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Aspect</span><span id="rm-aspect" class="data-value text-end">--</span></div>
+                    </div>
+                </details>
+                <!-- <div id="rm-data-container">
+                    <p class="font-bold tracking-wide data-title">Rel Motion</p>
+                    <div class="d-flex flex-column gap-1">
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Direction RM</span><span id="rm-dir" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Spd RM</span><span id="rm-spd" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Brg Rate</span><span id="rm-rate" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Tgt Angle</span><span id="rm-angle" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Aspect</span><span id="rm-aspect" class="data-value text-end">--</span></div>
+                    </div>
+                </div> -->
+                <details class="data secondary collapsible-panel" id="wind-data-container">
+                    <summary class="collapsible-summary" data-tooltip="Show/Hide Wind Data&#10;&amp; Radar Elements">Wind</summary>
+                    <div class="d-flex flex-column gap-1">
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">True</span><span id="wind-true" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Rel</span><span id="wind-rel" class="data-value text-end">--</span></div>
+                    </div>
+                </details>
+                <!-- <div id="wind-data-container">
+                    <p class="font-bold tracking-wide data-title">Wind</p>
+                    <div class="d-flex flex-column gap-1">
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">True</span><span id="wind-true" class="data-value text-end">--</span></div>
+                        <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Rel</span><span id="wind-rel" class="data-value text-end">--</span></div>
+                    </div>
+                </div> -->
+            </div>
+        </section>
+    </main>
+    <script src="./js/arena.js"></script>
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+
+<!-- Radar-wrapper drag logic moved to just before </body> -->
+    <script src="/_vercel/insights/script.js"></script>
+
+</body>
+</html>
+

@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+
+# Sitemaps can be added as needed

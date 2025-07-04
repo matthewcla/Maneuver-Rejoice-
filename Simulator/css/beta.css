@@ -1,0 +1,552 @@
+/* Apply the custom font and base styling */
+html, body {
+    margin: 0;
+    padding: 0;
+}
+/******************/
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+
+main {
+    display: flex;
+}
+
+#simulator {
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+#radar-wrapper {
+    height: 100vh;;
+}
+
+#right-pane {
+    width: 286px;    
+    flex-direction: column;
+    border-left: 1px solid #333;
+    height: 100vh;
+    background: #000;
+}
+
+
+
+/*****************/
+body {
+    font-family: 'Share Tech Mono', monospace;
+    background-color: #000000;
+    color: #ffffff;
+    overflow: hidden;
+    -webkit-user-select: none; /* Chrome/Safari */
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* IE/Edge */
+    user-select: none;         /* Standard */
+}
+/* Define custom colors for easier use in JS and to avoid purging */
+:root {
+    --radar-green: #00FF00;
+    --radar-white: #FFFFFF;
+    --radar-faint-green: rgba(0, 255, 0, 0.5);
+    --radar-faint-white: rgba(255, 255, 255, 0.5);
+    --radar-dark-orange: #FF8C00;
+    --radar-faint-orange: rgba(255, 140, 0, 0.5);
+    /* fallback for dynamic 100vh calculation */
+    --vh: 1vh;
+    /* global UI scale set by JavaScript */
+    --ui-scale: 1;
+    --base: calc(1 * var(--ui-scale));
+}
+/* Ensure the canvas is responsive; cursor state is managed dynamically */
+canvas {
+    display: block;
+    touch-action: none; /* enable custom touch gestures */
+}
+/* Helper class for green text color */
+.text-radar-green {
+    color: var(--radar-green);
+}
+.tracking-wide {
+    letter-spacing: 0.05em;
+}
+
+/* Ensure the main content area fills the viewport height */
+.sim-radar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+#data-pane,
+#data-pane > div,
+#track-data-container,
+#cpa-data-container,
+#rm-data-container,
+#wind-data-container {
+    width: 100%;
+}
+
+#sim-panel {
+    padding-top: 22px;
+    font-family: 'Digital-7 Mono', 'Share Tech Mono', monospace;
+    z-index: 10;
+    border-bottom: 1px solid #333;
+}
+
+#sim-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    border-top:1px solid #333;
+    font-size: 1.35rem;
+}
+
+#sim-clock {
+    font-size: 1.8rem;
+    padding-bottom: 17px;
+}
+
+.sim-control-btn {
+    flex-direction: column;
+    text-align: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    position: relative;
+    border-right: 1px solid #333;
+    padding: 6px 0 8px;
+}
+
+.sim-control-btn:last-child, .sim-control-btn.new {
+    border-right: none;
+}
+
+.sim-control-btn:hover {
+    background-color: #1f1f1f;
+}
+
+#btn-scen {
+    padding: 10px 0
+}
+#btn-rev, #btn-ff {
+    flex: 0 0 27.6%;
+}
+
+#btn-play-pause {
+    flex: 0 0 44.7%;
+}
+/* Button Styling */
+.control-btn {
+    /* background-color: black; */
+    background-color: transparent;
+    border-radius: 0.5rem;
+    border-width: 1.5px;
+    transition: opacity 0.2s ease-in-out;
+    width: 100%; /* Make buttons fill the container */
+    text-align: center;
+    /* Added for better vertical alignment of text/icons */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 16px;
+    padding: calc(0.5rem * var(--ui-scale)) calc(0.25rem * var(--ui-scale));
+    color: inherit;
+}
+.control-btn svg { width: 1em; height: 1em; }
+/* Tooltip visuals handled via shared #drag-tooltip element */
+.control-btn.unselected {
+    color: var(--radar-faint-green);
+    border-color: var(--radar-faint-green);
+}
+.control-btn.selected {
+    color: var(--radar-green);
+    border-color: var(--radar-green);
+}
+/*#button-bar{
+    padding: 0.5rem;
+    z-index: 40;
+    height: 100%;
+    background: purple;
+}
+#button-bar      { width: calc(80px * var(--ui-scale)); }
+#button-bar > .border-top { margin: calc(30px * var(--ui-scale)) 0; }
+*/
+
+#button-bar {
+    padding-top: 46px;
+}
+
+/* (override Bootstrap’s .gap‑2 and internal margins)              */
+#button-bar{
+    gap: 0.7rem !important;  /* .gap‑2 is 0.5 rem → now 0.2 rem (≈‑60%)*/
+}
+#button-bar .control-btn{
+    padding-block: calc(0.2rem * var(--ui-scale));  /* was 0.5 rem     */
+}
+/* the thin horizontal dividers */
+#button-bar .border-top{
+    margin-block: 0.3rem !important;  /* was ≈1 rem                      */
+}
+
+/* DATA PANE */
+/*#right-pane {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-basis: calc(300px * var(--ui-scale));
+    min-width: 320px;
+}*/
+#data-pane {
+    width: 100%;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid #333;
+}
+#data-pane .data {
+    padding: 20px 16px;
+    border-bottom: 1px solid #333;
+}
+#data-pane .data.primary .data-title {
+    color: var(--radar-green)
+}
+
+.data-title {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #999;
+}
+
+.data-label {
+    font-size: 16px;
+    line-height: 1.5;
+    font-weight: 300;
+}
+.data-value {
+    font-size: 18px;
+    line-height: 1.1;
+}
+#ownship-crs, #ownship-spd, #track-data-container .data-value {
+    font-size: 24px;
+}
+.editable {
+    cursor: pointer;
+}
+.data-value input {
+    background-color: transparent;
+    color: var(--radar-green);
+    border: none;
+    text-align: right;
+    font-size: inherit;
+    font-family: inherit;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    outline: none;
+}
+#data-pane .mt-2 { margin-top: 0.25rem !important; }
+#btn-add-track,
+#btn-drop-track {
+    width: 32px;
+    height: 32px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 28px;
+    color: var(--radar-faint-green);
+    background: transparent;
+    border: none;
+    line-height: 28px;
+    text-align: center;
+    user-select: none;
+}
+
+#btn-add-track:hover,
+#btn-drop-track:hover {
+    color: var(--radar-green);
+    cursor: pointer;
+
+}
+
+/* Let the radar fill the middle, and center its contents
+#radar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    gap: 10px;
+    background: yellow;
+}*/
+/* Make the radar container circular and centered */
+
+#radar-container {
+    max-width: 100vh;
+    min-height: 0;
+    width: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 1 / 1;   /* keep the radar container square */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#radarCanvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;   /* maintain perfect circle */
+}
+
+#help-modal {
+    border: 2px solid var(--radar-faint-green);
+    position: fixed;
+}
+#help-close-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    transform: scaleX(0.8);
+    transform-origin: top right;
+    width: 10%;
+}
+
+/* Tooltip for dragging items on the canvas */
+#drag-tooltip {
+    position: fixed;
+    display: none;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: var(--radar-green);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+    border-radius: 0.25rem;
+    pointer-events: none; /* So it doesn't interfere with mouse events */
+    z-index: 1000;
+    line-height: 1.4;
+    white-space: pre; /* To respect newlines and spacing */
+}
+#order-tooltip {
+    position: fixed;
+    display: none;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: var(--radar-dark-orange);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+    border-radius: 0.25rem;
+    pointer-events: none;
+    z-index: 1000;
+    line-height: 1.4;
+    white-space: pre;
+}
+
+#header {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    width: calc(100vw - 286px);
+    padding: 24px 24px 0;
+}
+
+
+#logo, #logo span {
+    font-family: 'Share Tech Mono', monospace;
+    line-height: 1;
+}
+#logo {
+    color: var(--radar-green);
+    font-size:1.7rem;
+    display: flex;
+    flex-direction: column;
+}
+
+#logo span {
+    color: #888;
+    font-size: 1rem;
+}
+
+#controls {
+    display: flex;
+    align-items: top;
+    gap: 16px;
+    font-size: 1.2rem;
+    flex: 1;
+    justify-content: right;
+    flex-direction: row;
+}
+
+#controls button {
+    all: unset;
+    flex-direction: row;
+    display: flex;
+    color: var(--radar-green);
+    background: #000;
+    box-shadow: none;
+    padding: 0;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+ .mobile-blocker {
+     position: fixed;
+     inset: 0;
+     background: #000;
+     color: #0f0;
+     z-index: 9999;
+     align-items: center;
+     justify-content: center;
+     font-family: 'Share Tech Mono', monospace;
+     font-size: clamp(1rem, 4vw, 1.95rem);
+     line-height: 1.4;
+     text-align: center;
+     padding: 2rem;
+     display: none;
+ }
+.tos-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    color: #0f0;
+    z-index: 9998;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding: 1rem;
+    font-family: 'Share Tech Mono', monospace;
+}
+.tos-content {
+    white-space: pre-wrap;
+    max-width: 60ch;
+}
+#tos-accept-btn {
+    margin-top: 1rem;
+}
+.help-modal {
+    position: fixed;
+    top: 10%;
+    left: 10%;
+    width: 80vw;
+    height: 60vh;
+    background: rgba(0, 0, 0, 0.95);
+    color: #0f0;
+    z-index: 9997;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: auto;
+    padding: 1rem;
+    font-family: 'Share Tech Mono', monospace;
+    resize: both;
+}
+
+.help-modal-text {
+    white-space: pre-wrap;
+    max-width: 100ch;
+    margin-top: 2rem;
+}
+
+
+details.collapsible-panel {
+  /* margin-bottom: 1rem; */
+  color: var(--radar-green)
+}
+
+summary.collapsible-summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: bold;
+}
+
+summary.collapsible-summary::before {
+  content: '▶';
+  display: inline-block;
+  transform: rotate(0deg);
+  transition: transform 0.2s ease;
+}
+
+details[open] > summary.collapsible-summary::before {
+  transform: rotate(90deg);
+}
+
+/* Larger font for selected track ID */
+#track-id {
+    font-size: 22px;
+}
+
+/* Settings gear button */
+
+/* Full screen button */
+#btn-fullscreen,
+#btn-settings {
+    position: fixed;
+    left: 32px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: var(--radar-green);
+    z-index: 4;
+}
+
+#btn-fullscreen { bottom: 55px; }
+#btn-settings  { bottom: 15px; }
+
+#btn-settings:hover,
+#btn-fullscreen:hover {
+    color: var(--radar-green);
+    cursor: pointer;
+}
+
+/* Settings drawer */
+#settings-drawer {
+    position: fixed;
+    left: 32px;
+    bottom: 15px;
+    width: 120px;
+    background: #000;
+    border: 1px solid #333;
+    border-bottom: none;
+    display: none;
+    flex-direction: column;
+    transform: translateY(100%) scale(1.3);
+    transform-origin: bottom left;
+    transition: transform 0.2s ease;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--radar-green);
+    z-index: 5;
+}
+
+#settings-drawer.open {
+    display: flex;
+    transform: translateY(0) scale(1.3);
+}
+
+#settings-drawer .setting-option {
+    padding: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+}
+
+#settings-drawer input[type="checkbox"] {
+    accent-color: var(--radar-green);
+}
