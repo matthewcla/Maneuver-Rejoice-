@@ -31,6 +31,27 @@ function solveCPA(own, tgt) {
     return { t: tCPA, d: dCPA };
 }
 
+const fsApi = {
+  request(el = document.documentElement) {
+    return  el.requestFullscreen?.()     ||
+            el.webkitRequestFullscreen?.()||
+            el.mozRequestFullScreen?.()  ||
+            el.msRequestFullscreen?.();
+  },
+  exit() {
+    return  document.exitFullscreen?.()   ||
+            document.webkitExitFullscreen?.()||
+            document.mozCancelFullScreen?.() ||
+            document.msExitFullscreen?.();
+  },
+  isActive() {
+    return document.fullscreenElement     ||
+           document.webkitFullscreenElement||
+           document.mozFullScreenElement   ||
+           document.msFullscreenElement;
+  }
+};
+
 class ScenarioGenerator {
     constructor(cfg){
         this.cfg = cfg;
@@ -416,10 +437,9 @@ class Simulator {
                     buttons: 1,
                     pointerType: 'touch'
                 });
-                e.preventDefault();
             };
-            this.canvas?.addEventListener('touchstart', wrap(this.handlePointerDown), { passive: false });
-            this.canvas?.addEventListener('touchmove', wrap(this.handlePointerMove), { passive: false });
+            this.canvas?.addEventListener('touchstart', wrap(this.handlePointerDown));
+            this.canvas?.addEventListener('touchmove', wrap(this.handlePointerMove));
             this.canvas?.addEventListener('touchend', wrap(this.handlePointerUp));
             this.canvas?.addEventListener('touchcancel', wrap(this.handlePointerUp));
         } else {
@@ -499,8 +519,8 @@ class Simulator {
         // Fullscreen toggle
         this.btnFullscreen?.addEventListener('click', () => this.toggleFullScreen());
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.fullscreenElement) {
-                document.exitFullscreen();
+            if (e.key === 'Escape' && fsApi.isActive()) {
+                fsApi.exit();
             }
         });
 
@@ -528,6 +548,10 @@ class Simulator {
                 this.dragTooltip.style.display = 'none';
             });
         });
+
+        ['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange']
+            .forEach(evt => document.addEventListener(evt, () => this._syncFullscreenUI()));
+        this._syncFullscreenUI();
 
         // Editable fields
         this.dataPane?.addEventListener('click', (e) => {
@@ -1675,12 +1699,23 @@ class Simulator {
         this.markSceneDirty();
     }
 
-    toggleFullScreen() {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen?.();
-        } else {
-            document.exitFullscreen?.();
+    async toggleFullScreen() {
+        try {
+            if (!fsApi.isActive()) {
+                await fsApi.request();
+            } else {
+                await fsApi.exit();
+            }
+        } catch (err) {
+            console.error('Fullscreen error', err);
         }
+    }
+
+    _syncFullscreenUI() {
+        const entering = !!fsApi.isActive();
+        this.btnFullscreen.setAttribute('data-state', entering ? 'exit' : 'enter');
+        this.btnFullscreen.title     = entering ? 'Exit full screen' : 'Enter full screen';
+        this.btnFullscreen.ariaLabel = this.btnFullscreen.title;
     }
 
     setupRandomScenario(){
@@ -1770,6 +1805,25 @@ class Simulator {
 }
 
 // --- Application Entry Point ---
+
+function enforceLandscape() {
+    const warning = document.getElementById('orientation-warning');
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    if (!isMobile || window.matchMedia('(orientation: landscape)').matches) {
+        document.body.classList.remove('portrait');
+        if (warning) warning.style.display = 'none';
+    } else {
+        document.body.classList.add('portrait');
+        if (warning) warning.style.display = 'flex';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    if (window.navigator.standalone) {
+        document.body.classList.add('pwa-standalone');
+    }
+    enforceLandscape();
+    window.addEventListener('orientationchange', enforceLandscape);
+    window.addEventListener('resize', enforceLandscape);
     new Simulator();
 });

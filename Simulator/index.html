@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#000000">
     <title>Maneuver: Simulator</title>
     <link rel="icon" type="image/svg+xml" href="favicons.svg">
+    <link rel="manifest" href="manifest.webmanifest">
     
     <!-- Bootstrap CSS for styling -->
     <link
@@ -35,17 +39,22 @@
 
     </style> -->
     <link rel="stylesheet" href="./css/beta.css"/>
+    <link rel="stylesheet" href="./css/install.css"/>
 </head>
 <body>
+    <div id="orientation-warning">Rotate device to landscape</div>
+    <div id="iosTip">Tap ‘Share’ → ‘Add to Home Screen’ to install.</div>
 
 <div id="drag-tooltip"></div>
 <div id="order-tooltip"></div>
 
+<!--
 <div id="mobile-blocker" class="mobile-blocker">
   Maneuver is currently not compatible with cell-phone browsers. <br> <br>
   Please open this page on a laptop, desktop, or tablet. <br> <br>
   Questions? >> AheadFlank.ai@gmail.com
 </div>
+-->
 
 	<!-- Terms of Service Modal -->
 <div id="tos-modal" class="tos-modal">
@@ -177,34 +186,36 @@ Questions?  >>  Aheadflank.ai@gmail.com
   </pre>
 </div>
 
+<!--
 <script>
-	/* ✧✧✧ 2️⃣  DEVICE-GUARD SCRIPT ✧✧✧ */
-	(function () {
-	  const PHONE_MAX_WIDTH = 768;
-	  const blocker = document.getElementById('mobile-blocker');
-	  const root = document.documentElement;
+        /* ✧✧✧ 2️⃣  DEVICE-GUARD SCRIPT ✧✧✧ */
+        (function () {
+          const PHONE_MAX_WIDTH = 768;
+          const blocker = document.getElementById('mobile-blocker');
+          const root = document.documentElement;
 
-	  function isPhoneSized() {
-	    return window.innerWidth <= PHONE_MAX_WIDTH;
-	  }
+          function isPhoneSized() {
+            return window.innerWidth <= PHONE_MAX_WIDTH;
+          }
 
-	  function isPhoneUserAgent() {
-	    const ua = navigator.userAgent;
-	    const isTablet = /iPad|Tablet/i.test(ua);
-	    if (isTablet) return false;
-	    return /Android.*Mobile|iPhone|iPod|IEMobile|BlackBerry/i.test(ua);
-	  }
+          function isPhoneUserAgent() {
+            const ua = navigator.userAgent;
+            const isTablet = /iPad|Tablet/i.test(ua);
+            if (isTablet) return false;
+            return /Android.*Mobile|iPhone|iPod|IEMobile|BlackBerry/i.test(ua);
+          }
 
-	  function updateBlocker() {
-	    const phone = isPhoneSized() || isPhoneUserAgent();
-	    blocker.style.display = phone ? 'flex' : 'none';
-	    root.style.overflow = phone ? 'hidden' : '';
-	  }
+          function updateBlocker() {
+            const phone = isPhoneSized() || isPhoneUserAgent();
+            blocker.style.display = phone ? 'flex' : 'none';
+            root.style.overflow = phone ? 'hidden' : '';
+          }
 
-	  updateBlocker();
-	  window.addEventListener('resize', updateBlocker);
-	})();
+          updateBlocker();
+          window.addEventListener('resize', updateBlocker);
+        })();
 </script>
+-->
 
 <script>
   // Terms of Service modal logic
@@ -289,7 +300,13 @@ Questions?  >>  Aheadflank.ai@gmail.com
                 </div>
                 <!-- Data Panels for selected track will be dynamically inserted here -->
                 <div class="data primary" id="track-data-container">
-                        <p class="font-bold tracking-wide data-title">Track <span id="track-id">--</span></p>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <p class="font-bold tracking-wide data-title mb-0">Track <span id="track-id">--</span></p>
+                        <div id="track-controls" class="d-flex flex-row ms-auto" style="gap:13px;">
+                            <button id="btn-add-track"  title="Add new track">+</button>
+                            <button id="btn-drop-track" title="Drop this track">&ndash;</button>
+                        </div>
+                    </div>
                     <div class="d-flex flex-column gap-1">
                         <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Brg</span><span id="track-brg" class="data-value editable">--</span></div>
                         <div class="d-flex justify-content-between align-items-baseline"><span class="data-label">Rng</span><span id="track-rng" class="data-value editable">--</span></div>
@@ -350,6 +367,24 @@ Questions?  >>  Aheadflank.ai@gmail.com
             </div>
         </section>
     </main>
+
+    <nav id="button-bar" class="d-flex flex-column align-items-bottom gap-2 justify-content-end"></nav>
+    <button id="btn-fullscreen" aria-label="Enter full screen" title="Enter full screen" data-state="enter">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4 4h6v2H6v4H4V4m10 0h6v6h-2V6h-4V4m6 10v6h-6v-2h4v-4h2m-10 4h4v2H4v-6h2v4z"/>
+        </svg>
+    </button>
+    <button id="btn-settings">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.14,12.94a7.14,7.14,0,0,0,0-1.88l2.11-1.65a.5.5,0,0,0,.12-.63l-2-3.46a.5.5,0,0,0-.6-.22l-2.49,1a7,7,0,0,0-1.62-.94l-.38-2.65A.5.5,0,0,0,13.7,3H10.3a.5.5,0,0,0-.49.41l-.38,2.65a7,7,0,0,0-1.62.94l-2.49-1a.5.5,0,0,0-.6.22l-2,3.46a.5.5,0,0,0,.12.63l2.11,1.65a7.14,7.14,0,0,0,0,1.88L3,14.59a.5.5,0,0,0-.12.63l2,3.46a.5.5,0,0,0,.6.22l2.49-1a7,7,0,0,0,1.62.94l.38,2.65a.5.5,0,0,0,.49.41h3.4a.5.5,0,0,0,.49-.41l.38-2.65a7,7,0,0,0,1.62-.94l2.49,1a.5.5,0,0,0,.6-.22l2-3.46a.5.5,0,0,0-.12-.63ZM12,15.5A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>
+        </svg>
+    </button>
+    <div id="settings-drawer">
+        <button id="btnInstall" class="setting-option" hidden>Add to Home</button>
+        <label class="setting-option">Polar Plot <input type="checkbox" id="toggle-polar-plot" checked></label>
+        <label class="setting-option">Track IDs <input type="checkbox" id="toggle-track-ids" checked></label>
+    </div>
+    <script type="module" src="./js/install.js"></script>
     <script src="./js/arena.js"></script>
     <script>
         window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };

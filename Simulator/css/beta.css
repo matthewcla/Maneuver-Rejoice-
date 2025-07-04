@@ -165,7 +165,7 @@ canvas {
 .control-btn svg { width: 1em; height: 1em; }
 /* Tooltip visuals handled via shared #drag-tooltip element */
 .control-btn.unselected {
-    color: var(--radar-faint-green);
+    color: var(--radar-green);
     border-color: var(--radar-faint-green);
 }
 .control-btn.selected {
@@ -263,19 +263,24 @@ canvas {
     height: 36px;
     font-family: 'IBM Plex Sans Mono', monospace;
     font-size: 28px;
-    color: var(--radar-faint-green);
+    color: var(--radar-green);
     background: transparent;
     border: none;
+    border-radius: 0.5rem;
     line-height: 28px;
     text-align: center;
     user-select: none;
+    transition: opacity 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #btn-add-track:hover,
 #btn-drop-track:hover {
     color: var(--radar-green);
+    background-color: #1f1f1f;
     cursor: pointer;
-
 }
 
 /* Let the radar fill the middle, and center its contents
@@ -502,12 +507,16 @@ details[open] > summary.collapsible-summary::before {
     padding: 0;
     background: transparent;
     border: none;
-    color: var(--radar-green);
+    color: var(--radar-faint-green);
     z-index: 4;
 }
 
-#btn-fullscreen { bottom: 55px; }
-#btn-settings  { bottom: 15px; }
+#btn-fullscreen { bottom: 95px; }
+#btn-settings  { bottom: 45px; }
+
+body.pwa-standalone #btn-fullscreen {
+    display: none;
+}
 
 #btn-settings:hover,
 #btn-fullscreen:hover {
@@ -549,4 +558,24 @@ details[open] > summary.collapsible-summary::before {
 
 #settings-drawer input[type="checkbox"] {
     accent-color: var(--radar-green);
+}
+
+/* Optional visual cue when in full-screen */
+:fullscreen #btn-fullscreen svg { transform: rotate(45deg); }
+:-webkit-full-screen #btn-fullscreen svg { transform: rotate(45deg); }
+
+#orientation-warning {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+    color: var(--radar-green);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: "Share Tech Mono", monospace;
+}
+body.portrait #orientation-warning {
+    display: flex;
 }
