@@ -16,6 +16,7 @@ const CARDINAL_BEARINGS   = [0, 90, 180, 270];
 const DASH_PATTERN_NONCAR = [4, 4];      // dashed
 const DASH_PATTERN_SOLID  = [];          // solid
 const LABEL_OFFSET_PX     = 6;           // gap between ring and label
+const VECTOR_LINE_WIDTH   = 1.4 * 1.2 * 2; // consistent width for all vectors
 
 function solveCPA(own, tgt) {
     const rx = tgt.x - own.x;
@@ -30,6 +31,27 @@ function solveCPA(own, tgt) {
     const dCPA = Math.sqrt(xCPA*xCPA + yCPA*yCPA);
     return { t: tCPA, d: dCPA };
 }
+
+const fsApi = {
+  request(el = document.documentElement) {
+    return  el.requestFullscreen?.()     ||
+            el.webkitRequestFullscreen?.()||
+            el.mozRequestFullScreen?.()  ||
+            el.msRequestFullscreen?.();
+  },
+  exit() {
+    return  document.exitFullscreen?.()   ||
+            document.webkitExitFullscreen?.()||
+            document.mozCancelFullScreen?.() ||
+            document.msExitFullscreen?.();
+  },
+  isActive() {
+    return document.fullscreenElement     ||
+           document.webkitFullscreenElement||
+           document.mozFullScreenElement   ||
+           document.msFullscreenElement;
+  }
+};
 
 class ScenarioGenerator {
     constructor(cfg){
@@ -416,10 +438,9 @@ class Simulator {
                     buttons: 1,
                     pointerType: 'touch'
                 });
-                e.preventDefault();
             };
-            this.canvas?.addEventListener('touchstart', wrap(this.handlePointerDown), { passive: false });
-            this.canvas?.addEventListener('touchmove', wrap(this.handlePointerMove), { passive: false });
+            this.canvas?.addEventListener('touchstart', wrap(this.handlePointerDown));
+            this.canvas?.addEventListener('touchmove', wrap(this.handlePointerMove));
             this.canvas?.addEventListener('touchend', wrap(this.handlePointerUp));
             this.canvas?.addEventListener('touchcancel', wrap(this.handlePointerUp));
         } else {
@@ -495,12 +516,25 @@ class Simulator {
                     }, { once: true });
                 }
             });
+
+            // Close the drawer when tapping outside of it on touch devices
+            document.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'touch' &&
+                    this.settingsDrawer.classList.contains('open') &&
+                    !this.settingsDrawer.contains(e.target) &&
+                    e.target !== this.btnSettings) {
+                    this.settingsDrawer.classList.remove('open');
+                    this.settingsDrawer.addEventListener('transitionend', () => {
+                        this.settingsDrawer.style.display = 'none';
+                    }, { once: true });
+                }
+            });
         }
         // Fullscreen toggle
         this.btnFullscreen?.addEventListener('click', () => this.toggleFullScreen());
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.fullscreenElement) {
-                document.exitFullscreen();
+            if (e.key === 'Escape' && fsApi.isActive()) {
+                fsApi.exit();
             }
         });
 
@@ -528,6 +562,10 @@ class Simulator {
                 this.dragTooltip.style.display = 'none';
             });
         });
+
+        ['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange']
+            .forEach(evt => document.addEventListener(evt, () => this._syncFullscreenUI()));
+        this._syncFullscreenUI();
 
         // Editable fields
         this.dataPane?.addEventListener('click', (e) => {
@@ -918,7 +956,7 @@ class Simulator {
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, size, size);
         ctx.strokeStyle = this.radarFaintGreen;
-        ctx.lineWidth = 0.9;
+        ctx.lineWidth = 2.7;
 
         ctx.beginPath();
         ctx.arc(center, center, radius, 0, 2 * Math.PI);
@@ -932,7 +970,7 @@ class Simulator {
 
         // --- Range ring labels ---
         ctx.fillStyle = this.radarFaintGreen;
-        ctx.font = `${Math.max(11, radius * 0.038)}px 'Share Tech Mono', monospace`;
+        ctx.font = `bold ${Math.max(11, radius * 0.038)}px 'IBM Plex Sans Mono', monospace`;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         for (let i = 1; i <= 3; i++) {
@@ -968,8 +1006,18 @@ class Simulator {
         ctx.restore();
     }
 
-    drawRangeRings(center, radius) { this.ctx.strokeStyle = this.radarFaintGreen; this.ctx.lineWidth = 0.9; this.ctx.beginPath(); this.ctx.arc(center, center, radius, 0, 2 * Math.PI); this.ctx.stroke(); for (let i = 1; i < 3; i++) { this.ctx.beginPath(); this.ctx.arc(center, center, radius * (i / 3), 0, 2 * Math.PI); this.ctx.stroke(); } }
-    drawRangeLabels(center, radius) { this.ctx.fillStyle = this.radarFaintGreen; this.ctx.font = `${Math.max(11, radius * 0.038)}px 'Share Tech Mono',monospace`; this.ctx.textAlign = 'left'; this.ctx.textBaseline = 'middle'; for (let i = 1; i <= 3; i++) { const ringRadius = radius * (i / 3); const range = this.maxRange * (i / 3); this.ctx.fillText(range.toFixed(1), center + ringRadius + LABEL_OFFSET_PX, center); } }
+    drawRangeRings(center, radius) { this.ctx.strokeStyle = this.radarFaintGreen; this.ctx.lineWidth = 2.7; this.ctx.beginPath(); this.ctx.arc(center, center, radius, 0, 2 * Math.PI); this.ctx.stroke(); for (let i = 1; i < 3; i++) { this.ctx.beginPath(); this.ctx.arc(center, center, radius * (i / 3), 0, 2 * Math.PI); this.ctx.stroke(); } }
+    drawRangeLabels(center, radius) {
+        this.ctx.fillStyle = this.radarFaintGreen;
+        this.ctx.font = `bold ${Math.max(11, radius * 0.038)}px 'IBM Plex Sans Mono',monospace`;
+        this.ctx.textAlign = 'left';
+        this.ctx.textBaseline = 'middle';
+        for (let i = 1; i <= 3; i++) {
+            const ringRadius = radius * (i / 3);
+            const range = this.maxRange * (i / 3);
+            this.ctx.fillText(range.toFixed(1), center + ringRadius + LABEL_OFFSET_PX, center);
+        }
+    }
 
     drawOwnShipIcon(center, radius) {
         this.ctx.strokeStyle = this.radarGreen;
@@ -985,6 +1033,7 @@ class Simulator {
         const endX = center + vectorDistPixels * Math.cos(courseAngle);
         const endY = center - vectorDistPixels * Math.sin(courseAngle);
         this.ownShip.vectorEndpoint = { x: endX, y: endY };
+        this.ctx.lineWidth = VECTOR_LINE_WIDTH;
         this.ctx.beginPath();
         this.ctx.moveTo(center, center);
         this.ctx.lineTo(endX, endY);
@@ -1003,7 +1052,7 @@ class Simulator {
             this.ownShip.orderedVectorEndpoint = { x: oEndX, y: oEndY };
             this.ctx.save();
             this.ctx.strokeStyle = this.radarDarkOrange;
-            this.ctx.lineWidth = 1.4 * 1.2 * 2;
+            this.ctx.lineWidth = VECTOR_LINE_WIDTH;
             this.ctx.beginPath();
             this.ctx.moveTo(center, center);
             this.ctx.lineTo(oEndX, oEndY);
@@ -1013,7 +1062,7 @@ class Simulator {
             const rect = this.canvas.getBoundingClientRect();
             const tipX = rect.left + (oEndX / this.DPR);
             const tipY = rect.top + (oEndY / this.DPR);
-            const txt = `Crs: ${orderedCourse.toFixed(1)} T\nSpd: ${orderedSpeed.toFixed(1)} kts`;
+            const txt = `Crs: ${this.formatBearing(orderedCourse)} T\nSpd: ${orderedSpeed.toFixed(1)} kts`;
             this.orderTooltip.style.color = this.radarDarkOrange;
             this.orderTooltip.innerText = txt;
             this.orderTooltip.style.display = 'block';
@@ -1031,7 +1080,7 @@ class Simulator {
             const dEndY = center - dragDistPixels * Math.sin(dragAngle);
             this.ctx.save();
             this.ctx.strokeStyle = this.radarWhite;
-            this.ctx.lineWidth = 1.4 * 1.2 * 2;
+            this.ctx.lineWidth = VECTOR_LINE_WIDTH;
             this.ctx.beginPath();
             this.ctx.moveTo(center, center);
             this.ctx.lineTo(dEndX, dEndY);
@@ -1054,6 +1103,7 @@ class Simulator {
         this.ctx.strokeStyle = this.radarGreen;
         this.ctx.lineWidth = 1.8;
         this.ctx.strokeRect(x - targetSize / 2, y - targetSize / 2, targetSize, targetSize);
+        this.ctx.lineWidth = VECTOR_LINE_WIDTH;
         const timeInHours = this.vectorTimeInMinutes / 60;
         const pixelsPerNm = radius / this.maxRange;
         const vectorDistPixels = track.speed * timeInHours * pixelsPerNm;
@@ -1066,7 +1116,7 @@ class Simulator {
         this.ctx.lineTo(endX, endY);
         this.ctx.stroke();
         this.ctx.fillStyle = this.radarGreen;
-        this.ctx.font = `${Math.max(11, radius * 0.038)}px 'Share Tech Mono', monospace`;
+        this.ctx.font = `${Math.max(11, radius * 0.038)}px 'IBM Plex Sans Mono', monospace`;
         this.ctx.textAlign = 'left';
         this.ctx.textBaseline = 'top';
         if (this.showTrackIds) {
@@ -1085,7 +1135,7 @@ class Simulator {
         const endY = startY - vectorDistPixels * Math.sin(vectorAngleRad);
         this.ctx.save();
         this.ctx.strokeStyle = this.radarGreen;
-        this.ctx.lineWidth = 1.8;
+        this.ctx.lineWidth = VECTOR_LINE_WIDTH;
         this.ctx.setLineDash([5, 5]);
         this.ctx.beginPath();
         this.ctx.moveTo(startX, startY);
@@ -1154,11 +1204,11 @@ class Simulator {
         this.ctx.save();
         this.ctx.strokeStyle = this.radarFaintGreen;
         this.ctx.fillStyle   = this.radarFaintGreen;
-        this.ctx.font        = `${Math.max(12, radius * 0.08)}px 'Share Tech Mono', monospace`;
+        this.ctx.font        = `${Math.max(12, radius * 0.08)}px 'IBM Plex Sans Mono', monospace`;
         this.ctx.textAlign   = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('W', wX, wY);
-        this.ctx.lineWidth = 2;
+        this.ctx.lineWidth = VECTOR_LINE_WIDTH;
         this.ctx.beginPath();
         this.ctx.moveTo(startX, startY);
         this.ctx.lineTo(endX, endY);
@@ -1183,7 +1233,7 @@ class Simulator {
 
             this.ctx.save();
             this.ctx.strokeStyle = this.radarFaintGreen;
-            this.ctx.lineWidth = 1.8;
+            this.ctx.lineWidth = VECTOR_LINE_WIDTH;
             this.ctx.setLineDash([5, 5]);
             this.ctx.beginPath();
             this.ctx.moveTo(center, center);
@@ -1675,12 +1725,23 @@ class Simulator {
         this.markSceneDirty();
     }
 
-    toggleFullScreen() {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen?.();
-        } else {
-            document.exitFullscreen?.();
+    async toggleFullScreen() {
+        try {
+            if (!fsApi.isActive()) {
+                await fsApi.request();
+            } else {
+                await fsApi.exit();
+            }
+        } catch (err) {
+            console.error('Fullscreen error', err);
         }
+    }
+
+    _syncFullscreenUI() {
+        const entering = !!fsApi.isActive();
+        this.btnFullscreen.setAttribute('data-state', entering ? 'exit' : 'enter');
+        this.btnFullscreen.title     = entering ? 'Exit full screen' : 'Enter full screen';
+        this.btnFullscreen.ariaLabel = this.btnFullscreen.title;
     }
 
     setupRandomScenario(){
@@ -1765,11 +1826,30 @@ class Simulator {
     prepareStaticStyles() {
         this.ctx.strokeStyle = this.radarFaintGreen;
         this.ctx.fillStyle   = this.radarFaintGreen;
-        this.ctx.font        = `${Math.max(12, this.canvas.width * 0.04)}px 'Share Tech Mono', monospace`;
+        this.ctx.font        = `${Math.max(12, this.canvas.width * 0.04)}px 'IBM Plex Sans Mono', monospace`;
     }
 }
 
 // --- Application Entry Point ---
+
+function enforceLandscape() {
+    const warning = document.getElementById('orientation-warning');
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    if (!isMobile || window.matchMedia('(orientation: landscape)').matches) {
+        document.body.classList.remove('portrait');
+        if (warning) warning.style.display = 'none';
+    } else {
+        document.body.classList.add('portrait');
+        if (warning) warning.style.display = 'flex';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    new Simulator();
+    if (window.navigator.standalone) {
+        document.body.classList.add('pwa-standalone');
+    }
+    const sim = new Simulator();
+    enforceLandscape();
+    window.addEventListener('orientationchange', enforceLandscape);
+    window.addEventListener('resize', enforceLandscape);
 });

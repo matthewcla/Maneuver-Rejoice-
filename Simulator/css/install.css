@@ -1,0 +1,60 @@
+/* install.css - Visual cues for PWA installation */
+
+/* Hidden until JS adds the .show class */
+#btnInstall {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+#btnInstall.show {
+    display: inline-block;
+    opacity: 1;
+    animation: pulse 1s ease-out 2;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.1); }
+}
+
+/* iOS fallback overlay */
+#iosTip {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+    color: #fff;
+    font-family: sans-serif;
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    flex-direction: column;
+}
+body.no-install-ios #iosTip {
+    display: flex;
+}
+
+.ios-tip-icon {
+    width: 64px;
+    margin-bottom: 20px;
+}
+
+.ios-tip-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+}
+
+.ios-web-btn {
+    background: darkred;
+    color: white;
+    margin-right: 20px;
+}
+
+.ios-share-btn {
+    background: transparent;
+    border-color: var(--radar-green);
+    color: var(--radar-green);
+}

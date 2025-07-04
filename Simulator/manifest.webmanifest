@@ -1,0 +1,16 @@
+{
+  "name": "Maneuver Simulator",
+  "short_name": "Maneuver",
+  "description": "Educational radar and collision avoidance simulator",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "favicons.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

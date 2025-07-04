@@ -3,5 +3,5 @@
   <!-- black circle background -->
   <circle cx="32" cy="32" r="32" fill="black"></circle>
   <!-- white “M” in a built-in monospace font -->
-  <text x="32" y="48" text-anchor="middle" font-family="monospace" font-size="48" fill="white">M</text>
+  <text x="32" y="48" text-anchor="middle" font-family="IBM Plex Sans Mono, monospace" font-size="48" fill="white">M</text>
 </svg>
