@@ -10,6 +10,9 @@ const iosTip     = document.getElementById('iosTip');
 const iosShareBtn = document.getElementById('ios-share');
 const iosWebBtn   = document.getElementById('ios-web');
 
+// Track whether the user has opted out of share prompts
+const skipSharePrompt = localStorage.getItem('skipSharePrompt') === 'true';
+
 // Platform detection helpers
 const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isInStandalone = window.matchMedia('(display-mode: standalone)').matches ||
@@ -27,7 +30,8 @@ window.addEventListener('load', () => {
     if (isInStandalone) {
         document.body.classList.add('installed');
         hidePromos();
-    } else if (isIos && iosTip) {
+        localStorage.setItem('skipSharePrompt', 'true');
+    } else if (isIos && iosTip && !skipSharePrompt) {
         // iOS does not support beforeinstallprompt
         document.body.classList.add('no-install-ios');
     }
@@ -37,10 +41,12 @@ iosShareBtn?.addEventListener('click', () => {
     if (navigator.share) {
         navigator.share({ title: document.title, url: location.href }).catch(() => {});
     }
+    localStorage.setItem('skipSharePrompt', 'true');
 });
 
 iosWebBtn?.addEventListener('click', () => {
     iosTip?.remove();
+    localStorage.setItem('skipSharePrompt', 'true');
 });
 
 // Intercept default browser mini-infobar
@@ -58,10 +64,14 @@ installBtn?.addEventListener('click', async () => {
     console.log('User response to install prompt:', outcome);
     deferredPrompt = null;
     installBtn.classList.remove('show');
+    if (outcome === 'accepted') {
+        localStorage.setItem('skipSharePrompt', 'true');
+    }
 });
 
 // Cleanup when installation finishes
 window.addEventListener('appinstalled', () => {
     document.body.classList.add('installed');
     hidePromos();
+    localStorage.setItem('skipSharePrompt', 'true');
 });
