@@ -259,8 +259,8 @@ canvas {
 #data-pane .mt-2 { margin-top: 0.25rem !important; }
 #btn-add-track,
 #btn-drop-track {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     font-family: 'Share Tech Mono', monospace;
     font-size: 28px;
     color: var(--radar-faint-green);
