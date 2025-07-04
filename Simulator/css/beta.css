@@ -266,16 +266,21 @@ canvas {
     color: var(--radar-faint-green);
     background: transparent;
     border: none;
+    border-radius: 0.5rem;
     line-height: 28px;
     text-align: center;
     user-select: none;
+    transition: opacity 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #btn-add-track:hover,
 #btn-drop-track:hover {
     color: var(--radar-green);
+    background-color: #1f1f1f;
     cursor: pointer;
-
 }
 
 /* Let the radar fill the middle, and center its contents
@@ -507,7 +512,7 @@ details[open] > summary.collapsible-summary::before {
 }
 
 #btn-fullscreen { bottom: 55px; }
-#btn-settings  { bottom: 15px; }
+#btn-settings  { bottom: 35px; }
 
 #btn-settings:hover,
 #btn-fullscreen:hover {
