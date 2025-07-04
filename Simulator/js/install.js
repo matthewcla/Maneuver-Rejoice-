@@ -38,9 +38,7 @@ window.addEventListener('load', () => {
 });
 
 iosShareBtn?.addEventListener('click', () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href }).catch(() => {});
-    }
+    iosTip?.remove();
     localStorage.setItem('skipSharePrompt', 'true');
 });
 

@@ -47,6 +47,15 @@ body.no-install-ios #iosTip {
     margin-top: 40px;
 }
 
+.ios-tip-actions .control-btn {
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.ios-tip-main {
+    font-weight: bold;
+}
+
 .ios-web-btn {
     background: darkred;
     color: white;
