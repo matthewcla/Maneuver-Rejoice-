@@ -273,7 +273,6 @@ class Simulator {
         this.btnFullscreen = document.getElementById('btn-fullscreen');
         this.btnSettings = document.getElementById('btn-settings');
         this.settingsDrawer = document.getElementById('settings-drawer');
-        this.btnInstall = document.getElementById('btn-install');
         this.chkPolarPlot = document.getElementById('toggle-polar-plot');
         this.chkTrackIds = document.getElementById('toggle-track-ids');
 
@@ -1806,11 +1805,6 @@ class Simulator {
 }
 
 // --- Application Entry Point ---
-let deferredInstallPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredInstallPrompt = e;
-});
 
 function enforceLandscape() {
     const warning = document.getElementById('orientation-warning');
@@ -1831,18 +1825,5 @@ document.addEventListener('DOMContentLoaded', () => {
     enforceLandscape();
     window.addEventListener('orientationchange', enforceLandscape);
     window.addEventListener('resize', enforceLandscape);
-    const installBtn = document.getElementById('btn-install');
-    if (installBtn) {
-        installBtn.addEventListener('click', async () => {
-            if (deferredInstallPrompt) {
-                deferredInstallPrompt.prompt();
-                deferredInstallPrompt = null;
-            } else if (navigator.share) {
-                try { await navigator.share({ url: location.href }); } catch (err) {}
-            } else {
-                alert("Use your browser's share menu to add this page to your home screen.");
-            }
-        });
-    }
     new Simulator();
 });
