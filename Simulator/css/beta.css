@@ -165,7 +165,7 @@ canvas {
 .control-btn svg { width: 1em; height: 1em; }
 /* Tooltip visuals handled via shared #drag-tooltip element */
 .control-btn.unselected {
-    color: var(--radar-faint-green);
+    color: var(--radar-green);
     border-color: var(--radar-faint-green);
 }
 .control-btn.selected {
@@ -263,7 +263,7 @@ canvas {
     height: 32px;
     font-family: 'Share Tech Mono', monospace;
     font-size: 28px;
-    color: var(--radar-faint-green);
+    color: var(--radar-green);
     background: transparent;
     border: none;
     border-radius: 0.5rem;
@@ -511,7 +511,7 @@ details[open] > summary.collapsible-summary::before {
     z-index: 4;
 }
 
-#btn-fullscreen { bottom: 55px; }
+#btn-fullscreen { bottom: 85px; }
 #btn-settings  { bottom: 35px; }
 
 #btn-settings:hover,
