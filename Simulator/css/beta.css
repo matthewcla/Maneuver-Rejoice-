@@ -556,6 +556,10 @@ body.pwa-standalone #btn-fullscreen {
     align-items: center;
     font-size: 12px;
 }
+#settings-drawer .icon-left {
+    justify-content: flex-start;
+    gap: 5px;
+}
 
 #settings-drawer input[type="checkbox"] {
     accent-color: var(--radar-green);

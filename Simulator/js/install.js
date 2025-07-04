@@ -6,6 +6,7 @@ let deferredPrompt = null; // event saved for triggering later
 
 // Element references
 const installBtn = document.getElementById('btnInstall');
+const shareBtn   = document.getElementById('btnShare');
 const iosTip     = document.getElementById('iosTip');
 const iosShareBtn = document.getElementById('ios-share');
 const iosWebBtn   = document.getElementById('ios-web');
@@ -47,6 +48,12 @@ iosShareBtn?.addEventListener('click', () => {
 iosWebBtn?.addEventListener('click', () => {
     iosTip?.remove();
     localStorage.setItem('skipSharePrompt', 'true');
+});
+
+shareBtn?.addEventListener('click', () => {
+    if (navigator.share) {
+        navigator.share({ title: document.title, url: location.href }).catch(() => {});
+    }
 });
 
 // Intercept default browser mini-infobar
