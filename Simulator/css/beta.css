@@ -576,7 +576,14 @@ body.pwa-standalone #btn-fullscreen {
     justify-content: center;
     text-align: center;
     font-family: "Share Tech Mono", monospace;
+    flex-direction: column;
+    gap: 1rem;
 }
 body.portrait #orientation-warning {
     display: flex;
+}
+
+.rotate-icon {
+    width: 80px;
+    height: 80px;
 }

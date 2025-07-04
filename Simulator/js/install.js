@@ -7,6 +7,8 @@ let deferredPrompt = null; // event saved for triggering later
 // Element references
 const installBtn = document.getElementById('btnInstall');
 const iosTip     = document.getElementById('iosTip');
+const iosShareBtn = document.getElementById('ios-share');
+const iosWebBtn   = document.getElementById('ios-web');
 
 // Platform detection helpers
 const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -29,6 +31,16 @@ window.addEventListener('load', () => {
         // iOS does not support beforeinstallprompt
         document.body.classList.add('no-install-ios');
     }
+});
+
+iosShareBtn?.addEventListener('click', () => {
+    if (navigator.share) {
+        navigator.share({ title: document.title, url: location.href }).catch(() => {});
+    }
+});
+
+iosWebBtn?.addEventListener('click', () => {
+    iosTip?.remove();
 });
 
 // Intercept default browser mini-infobar

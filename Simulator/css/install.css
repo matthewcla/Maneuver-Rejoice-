@@ -30,7 +30,31 @@
     justify-content: center;
     text-align: center;
     padding: 2rem;
+    flex-direction: column;
 }
 body.no-install-ios #iosTip {
     display: flex;
+}
+
+.ios-tip-icon {
+    width: 64px;
+    margin-bottom: 20px;
+}
+
+.ios-tip-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+}
+
+.ios-web-btn {
+    background: darkred;
+    color: white;
+    margin-right: 20px;
+}
+
+.ios-share-btn {
+    background: transparent;
+    border-color: var(--radar-green);
+    color: var(--radar-green);
 }
