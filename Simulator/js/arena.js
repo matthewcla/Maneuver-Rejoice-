@@ -515,6 +515,19 @@ class Simulator {
                     }, { once: true });
                 }
             });
+
+            // Close the drawer when tapping outside of it on touch devices
+            document.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'touch' &&
+                    this.settingsDrawer.classList.contains('open') &&
+                    !this.settingsDrawer.contains(e.target) &&
+                    e.target !== this.btnSettings) {
+                    this.settingsDrawer.classList.remove('open');
+                    this.settingsDrawer.addEventListener('transitionend', () => {
+                        this.settingsDrawer.style.display = 'none';
+                    }, { once: true });
+                }
+            });
         }
         // Fullscreen toggle
         this.btnFullscreen?.addEventListener('click', () => this.toggleFullScreen());
