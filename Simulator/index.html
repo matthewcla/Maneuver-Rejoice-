@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#000000">
     <title>Maneuver: Simulator</title>
     <link rel="icon" type="image/svg+xml" href="favicons.svg">
+    <link rel="manifest" href="manifest.webmanifest">
     
     <!-- Bootstrap CSS for styling -->
     <link
@@ -36,8 +40,11 @@
 
     </style> -->
     <link rel="stylesheet" href="./css/beta.css"/>
+    <link rel="stylesheet" href="./css/install.css"/>
 </head>
 <body>
+    <div id="orientation-warning">Rotate device to landscape</div>
+    <div id="iosTip">Tap ‘Share’ → ‘Add to Home Screen’ to install.</div>
 
 <div id="drag-tooltip"></div>
 <div id="order-tooltip"></div>
@@ -374,9 +381,11 @@ Questions?  >>  Aheadflank.ai@gmail.com
         </svg>
     </button>
     <div id="settings-drawer">
+        <button id="btnInstall" class="setting-option" hidden>Add to Home</button>
         <label class="setting-option">Polar Plot <input type="checkbox" id="toggle-polar-plot" checked></label>
         <label class="setting-option">Track IDs <input type="checkbox" id="toggle-track-ids" checked></label>
     </div>
+    <script type="module" src="./js/install.js"></script>
     <script src="./js/arena.js"></script>
     <script>
         window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };

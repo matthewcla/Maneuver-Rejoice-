@@ -437,10 +437,9 @@ class Simulator {
                     buttons: 1,
                     pointerType: 'touch'
                 });
-                e.preventDefault();
             };
-            this.canvas?.addEventListener('touchstart', wrap(this.handlePointerDown), { passive: false });
-            this.canvas?.addEventListener('touchmove', wrap(this.handlePointerMove), { passive: false });
+            this.canvas?.addEventListener('touchstart', wrap(this.handlePointerDown));
+            this.canvas?.addEventListener('touchmove', wrap(this.handlePointerMove));
             this.canvas?.addEventListener('touchend', wrap(this.handlePointerUp));
             this.canvas?.addEventListener('touchcancel', wrap(this.handlePointerUp));
         } else {
@@ -1806,6 +1805,25 @@ class Simulator {
 }
 
 // --- Application Entry Point ---
+
+function enforceLandscape() {
+    const warning = document.getElementById('orientation-warning');
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    if (!isMobile || window.matchMedia('(orientation: landscape)').matches) {
+        document.body.classList.remove('portrait');
+        if (warning) warning.style.display = 'none';
+    } else {
+        document.body.classList.add('portrait');
+        if (warning) warning.style.display = 'flex';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    if (window.navigator.standalone) {
+        document.body.classList.add('pwa-standalone');
+    }
+    enforceLandscape();
+    window.addEventListener('orientationchange', enforceLandscape);
+    window.addEventListener('resize', enforceLandscape);
     new Simulator();
 });
