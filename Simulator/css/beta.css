@@ -561,6 +561,12 @@ body.pwa-standalone #btn-fullscreen {
     gap: 5px;
 }
 
+/* icon should be 20% larger than text */
+#settings-drawer .icon-left svg {
+    width: 1.2em;
+    height: 1.2em;
+}
+
 #settings-drawer input[type="checkbox"] {
     accent-color: var(--radar-green);
 }

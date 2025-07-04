@@ -51,8 +51,13 @@ iosWebBtn?.addEventListener('click', () => {
 });
 
 shareBtn?.addEventListener('click', () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href }).catch(() => {});
+    if (isIos && iosTip) {
+        // On iOS the Web Share API doesn't expose the Add to Home option,
+        // so show the existing instructions overlay instead.
+        document.body.classList.add('no-install-ios');
+    } else if (navigator.share) {
+        navigator.share({ title: document.title, url: location.href })
+            .catch(() => {});
     }
 });
 
