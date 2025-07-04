@@ -1807,5 +1807,8 @@ class Simulator {
 
 // --- Application Entry Point ---
 document.addEventListener('DOMContentLoaded', () => {
+    if (window.navigator.standalone) {
+        document.body.classList.add('pwa-standalone');
+    }
     new Simulator();
 });
