@@ -3,6 +3,7 @@
  * ============================================================
  */
 import { ShipDynamics } from "./ship-dynamics.js";
+import { ContactController, solveCPA } from "./contact-controller.js";
 const ScenarioConfig = {
     contact_density        : 6,
     cpa_leeway             : 0.3,
@@ -18,20 +19,6 @@ const DASH_PATTERN_NONCAR = [4, 4];      // dashed
 const DASH_PATTERN_SOLID  = [];          // solid
 const LABEL_OFFSET_PX     = 6;           // gap between ring and label
 const VECTOR_LINE_WIDTH   = 1.4 * 1.2 * 2; // consistent width for all vectors
-
-function solveCPA(own, tgt) {
-    const rx = tgt.x - own.x;
-    const ry = tgt.y - own.y;
-    const vx = tgt.vx - own.vx;
-    const vy = tgt.vy - own.vy;
-
-    const v2   = vx*vx + vy*vy;
-    const tCPA = v2 < 1e-6 ? 1e9 : - (rx*vx + ry*vy) / v2;
-    const xCPA = rx + vx*tCPA;
-    const yCPA = ry + vy*tCPA;
-    const dCPA = Math.sqrt(xCPA*xCPA + yCPA*yCPA);
-    return { t: tCPA, d: dCPA };
-}
 
 const fsApi = {
   request(el = document.documentElement) {
@@ -152,85 +139,6 @@ class ScenarioGenerator {
     _randInt(a,b){return Math.floor(this._rand(a,b+1))}
 }
 
-class ContactController {
-    constructor(track){this.t=track;}
-    update(dtHours,allContacts,cfg){
-        if(this.t.isUserControlled||this.t.isHazard) return;
-        switch(this.t.state){
-            case 'MONITORING':
-                if(this._collisionThreat(allContacts,cfg)){ this._planManeuver(); }
-                break;
-            case 'CALCULATING_MANEUVER': break;
-            case 'EXECUTING_MANEUVER':
-                this._applyManeuver(dtHours); break;
-            case 'RESUMING_COURSE':
-                this._returnToBase(dtHours); break;
-        }
-    }
-    _collisionThreat(all,cfg){
-        const own=this._asParticle(this.t);
-        for(const other of all){
-            if(other===this.t||other.isHazard) continue;
-            const tgt=this._asParticle(other);
-            const {t,d}=solveCPA(own,tgt);
-            if(d<cfg.cpa_leeway && t>0 && t<cfg.time_to_cpa_range[1]/60){
-                this.t.threat=other; return true;
-            }
-        } return false;
-    }
-    _planManeuver(){
-        const rel=(this.t.threat&&this._relativeSituation(this.t,this.t.threat))||'UNKNOWN';
-        let deltaCrs=0, deltaSpd=0;
-        switch(rel){
-            case 'HEAD_ON': deltaCrs=30; break;
-            case 'CROSS_GIVEWAY': deltaCrs=35; break;
-            case 'OVERTAKING': deltaCrs=0; deltaSpd=-0.4*this.t.speed; break;
-            default: deltaCrs=25;
-        }
-        this.t._targetCourse=(this.t.course+deltaCrs+360)%360;
-        this.t._targetSpeed=Math.max(2,this.t.speed+deltaSpd);
-        this.t.state='EXECUTING_MANEUVER';
-    }
-    _applyManeuver(dt){
-        const rateTurn=10*dt*60;
-        const acc=1*dt*60;
-        const diffC=((this.t._targetCourse - this.t.orderedCourse + 540)%360)-180;
-        if(Math.abs(diffC)>rateTurn){
-            this.t.orderedCourse=(this.t.orderedCourse+Math.sign(diffC)*rateTurn+360)%360;
-        }else{ this.t.orderedCourse=this.t._targetCourse; }
-        if(Math.abs(this.t.orderedSpeed-this.t._targetSpeed)>acc){
-            this.t.orderedSpeed+=Math.sign(this.t._targetSpeed - this.t.orderedSpeed)*acc;
-        }else{ this.t.orderedSpeed=this.t._targetSpeed; }
-        if(!this._collisionThreat([...this.t._sim.tracks],this.t._sim.scenarioCfg)){
-            this.t.state='RESUMING_COURSE';
-        }
-    }
-    _returnToBase(dt){
-        const rateTurn=5*dt*60;
-        const acc=0.5*dt*60;
-        const diffC=((this.t._base.course - this.t.orderedCourse + 540)%360)-180;
-        if(Math.abs(diffC)>rateTurn){
-            this.t.orderedCourse=(this.t.orderedCourse+Math.sign(diffC)*rateTurn+360)%360;
-        }else{ this.t.orderedCourse=this.t._base.course; }
-        if(Math.abs(this.t.orderedSpeed-this.t._base.speed)>acc){
-            this.t.orderedSpeed+=Math.sign(this.t._base.speed - this.t.orderedSpeed)*acc;
-        }else{ this.t.orderedSpeed=this.t._base.speed; }
-        if(Math.abs(diffC)<1 && Math.abs(this.t.orderedSpeed-this.t._base.speed)<0.1){
-            this.t.state='MONITORING';
-            delete this.t.threat;
-        }
-    }
-    _relativeSituation(a,b){
-        const brg=(Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI+360)%360;
-        const diffHdgs=Math.abs(((a.course - b.course + 540)%360)-180);
-        if(diffHdgs>150&&diffHdgs<210) return 'HEAD_ON';
-        const relBrg=(brg - a.course + 360)%360;
-        if(relBrg>112.5&&relBrg<247.5) return 'OVERTAKING';
-        if(relBrg>0&&relBrg<112.5) return 'CROSS_GIVEWAY';
-        return 'OTHER';
-    }
-    _asParticle(v){const rad=(90-v.course)*Math.PI/180;return{x:v.x,y:v.y,vx:v.speed*Math.cos(rad),vy:v.speed*Math.sin(rad)}}
-}
 
 /**
  * @class Simulator
