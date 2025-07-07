@@ -176,16 +176,54 @@ class ContactController {
         } return false;
     }
     _planManeuver(){
-        const rel=(this.t.threat&&this._relativeSituation(this.t,this.t.threat))||'UNKNOWN';
-        let deltaCrs=0, deltaSpd=0;
-        switch(rel){
-            case 'HEAD_ON': deltaCrs=30; break;
-            case 'CROSS_GIVEWAY': deltaCrs=35; break;
-            case 'OVERTAKING': deltaCrs=0; deltaSpd=-0.4*this.t.speed; break;
-            default: deltaCrs=25;
+        if(!this.t.threat) return;
+
+        const cfg=this.t._sim?.scenarioCfg||{cpa_leeway:0.3,time_to_cpa_range:[15,30]};
+        const rel=this._relativeSituation(this.t,this.t.threat);
+        if(rel==='OTHER'){
+            this.t._targetCourse=this.t.course;
+            this.t._targetSpeed=this.t.speed;
+            this.t.state='EXECUTING_MANEUVER';
+            return;
         }
-        this.t._targetCourse=(this.t.course+deltaCrs+360)%360;
-        this.t._targetSpeed=Math.max(2,this.t.speed+deltaSpd);
+        const own=this._asParticle(this.t);
+        const tgt=this._asParticle(this.t.threat);
+
+        const starboardPreferred=['HEAD_ON','CROSS_GIVEWAY'].includes(rel);
+        const STEP=5, MAX=90;
+        const angles=[];
+        for(let ang=STEP; ang<=MAX; ang+=STEP){
+            if(starboardPreferred){ angles.push(ang); }
+            else { angles.push(ang,-ang); }
+        }
+
+        let best=null;
+        const maxT=cfg.time_to_cpa_range[1]/60;
+
+        const check=(course,speed)=>{
+            const rad=(90-course)*Math.PI/180;
+            const vx=speed*Math.cos(rad);
+            const vy=speed*Math.sin(rad);
+            const {t,d}=solveCPA({...own,vx,vy},tgt);
+            return d>cfg.cpa_leeway || t<0 || t>maxT;
+        };
+
+        for(const da of angles){
+            const crs=(this.t.course+da+360)%360;
+            if(check(crs,this.t.speed)){ best={course:crs,speed:this.t.speed}; break; }
+        }
+        if(!best){
+            for(const s of [this.t.speed*0.8,this.t.speed*0.6]){
+                for(const da of angles){
+                    const crs=(this.t.course+da+360)%360;
+                    if(check(crs,s)){ best={course:crs,speed:s}; break; }
+                }
+                if(best) break;
+            }
+        }
+
+        this.t._targetCourse=best?best.course:this.t.course;
+        this.t._targetSpeed=best?best.speed:this.t.speed;
         this.t.state='EXECUTING_MANEUVER';
     }
     _applyManeuver(dt){
