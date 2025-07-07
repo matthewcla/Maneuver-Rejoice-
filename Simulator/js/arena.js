@@ -2,6 +2,7 @@
  * Scenario generation & COLREGs contact controller
  * ============================================================
  */
+import { ShipDynamics } from "./ship-dynamics.js";
 const ScenarioConfig = {
     contact_density        : 6,
     cpa_leeway             : 0.3,
@@ -128,6 +129,8 @@ class ScenarioGenerator {
             course: course % 360,
             speed,
             state: 'MONITORING',
+            orderedCourse: course % 360,
+            orderedSpeed: speed,
             isUserControlled: false,
             _base: { course, speed },
             initialBearing: bearing,
@@ -191,13 +194,13 @@ class ContactController {
     _applyManeuver(dt){
         const rateTurn=10*dt*60;
         const acc=1*dt*60;
-        const diffC=((this.t._targetCourse - this.t.course + 540)%360)-180;
+        const diffC=((this.t._targetCourse - this.t.orderedCourse + 540)%360)-180;
         if(Math.abs(diffC)>rateTurn){
-            this.t.course=(this.t.course+Math.sign(diffC)*rateTurn+360)%360;
-        }else{ this.t.course=this.t._targetCourse; }
-        if(Math.abs(this.t.speed-this.t._targetSpeed)>acc){
-            this.t.speed+=Math.sign(this.t._targetSpeed - this.t.speed)*acc;
-        }else{ this.t.speed=this.t._targetSpeed; }
+            this.t.orderedCourse=(this.t.orderedCourse+Math.sign(diffC)*rateTurn+360)%360;
+        }else{ this.t.orderedCourse=this.t._targetCourse; }
+        if(Math.abs(this.t.orderedSpeed-this.t._targetSpeed)>acc){
+            this.t.orderedSpeed+=Math.sign(this.t._targetSpeed - this.t.orderedSpeed)*acc;
+        }else{ this.t.orderedSpeed=this.t._targetSpeed; }
         if(!this._collisionThreat([...this.t._sim.tracks],this.t._sim.scenarioCfg)){
             this.t.state='RESUMING_COURSE';
         }
@@ -205,14 +208,14 @@ class ContactController {
     _returnToBase(dt){
         const rateTurn=5*dt*60;
         const acc=0.5*dt*60;
-        const diffC=((this.t._base.course - this.t.course + 540)%360)-180;
+        const diffC=((this.t._base.course - this.t.orderedCourse + 540)%360)-180;
         if(Math.abs(diffC)>rateTurn){
-            this.t.course=(this.t.course+Math.sign(diffC)*rateTurn+360)%360;
-        }else{ this.t.course=this.t._base.course; }
-        if(Math.abs(this.t.speed-this.t._base.speed)>acc){
-            this.t.speed+=Math.sign(this.t._base.speed - this.t.speed)*acc;
-        }else{ this.t.speed=this.t._base.speed; }
-        if(Math.abs(diffC)<1 && Math.abs(this.t.speed-this.t._base.speed)<0.1){
+            this.t.orderedCourse=(this.t.orderedCourse+Math.sign(diffC)*rateTurn+360)%360;
+        }else{ this.t.orderedCourse=this.t._base.course; }
+        if(Math.abs(this.t.orderedSpeed-this.t._base.speed)>acc){
+            this.t.orderedSpeed+=Math.sign(this.t._base.speed - this.t.orderedSpeed)*acc;
+        }else{ this.t.orderedSpeed=this.t._base.speed; }
+        if(Math.abs(diffC)<1 && Math.abs(this.t.orderedSpeed-this.t._base.speed)<0.1){
             this.t.state='MONITORING';
             delete this.t.threat;
         }
@@ -384,6 +387,8 @@ class Simulator {
 
         this.simulationElapsed = 0;
         this.updateSimClock();
+        this.ownShip.dynamics = this.ownShip.dynamics || new ShipDynamics();
+        Object.assign(this.ownShip.dynamics,{x:this.ownShip.x,y:this.ownShip.y,psi:this.toRadians(this.ownShip.course),v:this.ownShip.speed});
         if (this.tracks.length > 0) {
             this.tracks.forEach(track => {
                 if (track.initialBearing !== undefined && track.initialRange !== undefined) {
@@ -623,6 +628,8 @@ class Simulator {
             this.updateDataPanels();
             this.updateButtonStyles();
             this.updateSimClock();
+        this.ownShip.dynamics = this.ownShip.dynamics || new ShipDynamics();
+        Object.assign(this.ownShip.dynamics,{x:this.ownShip.x,y:this.ownShip.y,psi:this.toRadians(this.ownShip.course),v:this.ownShip.speed});
             this.lastDomUpdate = timestamp;
         }
 
@@ -755,10 +762,10 @@ class Simulator {
                 track.range = Math.max(0, Math.min(359.9, value));
                 didUpdate = true;
             } else if (id === 'track-crs') {
-                track.course = Math.max(0, Math.min(359.9, value));
+                track.orderedCourse = Math.max(0, Math.min(359.9, value));
                 didUpdate = true;
             } else if (id === 'track-spd') {
-                track.speed = value;
+                track.orderedSpeed = value;
                 didUpdate = true;
             }
 
@@ -782,34 +789,27 @@ class Simulator {
 
         const dtSec = (deltaTime / 1000) * Math.abs(this.simulationSpeed);
 
-        // Gradually adjust ownship toward ordered values
-        const maxTurn = 3 * dtSec;            // degrees per second
-        let courseDiff = (this.ownShip.orderedCourse - this.ownShip.course + 540) % 360 - 180;
-        if (Math.abs(courseDiff) <= maxTurn) {
-            this.ownShip.course = this.ownShip.orderedCourse;
-        } else {
-            this.ownShip.course = (this.ownShip.course + Math.sign(courseDiff) * maxTurn + 360) % 360;
-        }
-
-        const maxSpdChange = 0.1 * dtSec;     // knots per second
-        const spdDiff = this.ownShip.orderedSpeed - this.ownShip.speed;
-        if (Math.abs(spdDiff) <= maxSpdChange) {
-            this.ownShip.speed = this.ownShip.orderedSpeed;
-        } else {
-            this.ownShip.speed += Math.sign(spdDiff) * maxSpdChange;
-        }
-
-        const timeMultiplier = (deltaTime / 3600000) * this.simulationSpeed;
-        const ownShipDist = this.ownShip.speed * timeMultiplier;
-        this.ownShip.x += ownShipDist * Math.sin(this.toRadians(this.ownShip.course));
-        this.ownShip.y += ownShipDist * Math.cos(this.toRadians(this.ownShip.course));
+        // --- Own ship ---
+        let hdg = this.toDegrees(this.ownShip.dynamics.psi);
+        let diff = (this.ownShip.orderedCourse - hdg + 540) % 360 - 180;
+        diff = Math.max(-35, Math.min(35, diff));
+        this.ownShip.dynamics.update(dtSec, diff, this.ownShip.orderedSpeed);
+        this.ownShip.x = this.ownShip.dynamics.x;
+        this.ownShip.y = this.ownShip.dynamics.y;
+        this.ownShip.course = this.toDegrees(this.ownShip.dynamics.psi);
+        this.ownShip.speed = this.ownShip.dynamics.v;
 
         this.tracks.forEach(track => {
             if (this.draggedItemId === track.id) return;
 
-            const dist = track.speed * timeMultiplier;
-            track.x += dist * Math.sin(this.toRadians(track.course));
-            track.y += dist * Math.cos(this.toRadians(track.course));
+            hdg = this.toDegrees(track.dynamics.psi);
+            let dc = (track.orderedCourse - hdg + 540) % 360 - 180;
+            dc = Math.max(-35, Math.min(35, dc));
+            track.dynamics.update(dtSec, dc, track.orderedSpeed);
+            track.x = track.dynamics.x;
+            track.y = track.dynamics.y;
+            track.course = this.toDegrees(track.dynamics.psi);
+            track.speed = track.dynamics.v;
             const dtH = (deltaTime/3600000)*Math.abs(this.simulationSpeed);
             track._controller?.update(dtH, this.tracks, this.scenarioCfg);
         });
@@ -1543,8 +1543,8 @@ class Simulator {
                     this.ownShip.dragCourse = newCourse;
                     this.ownShip.dragSpeed = Math.max(0, newSpeed);
                 } else {
-                    vessel.course = newCourse;
-                    vessel.speed = Math.max(2, newSpeed);
+                    vessel.orderedCourse = newCourse;
+                    vessel.orderedSpeed = Math.max(2, newSpeed);
                 }
                 this.markSceneDirty();
             }
