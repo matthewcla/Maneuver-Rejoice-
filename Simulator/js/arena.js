@@ -176,16 +176,15 @@ class ContactController {
         } return false;
     }
     _planManeuver(){
-        const rel=(this.t.threat&&this._relativeSituation(this.t,this.t.threat))||'UNKNOWN';
-        let deltaCrs=0, deltaSpd=0;
-        switch(rel){
-            case 'HEAD_ON': deltaCrs=30; break;
-            case 'CROSS_GIVEWAY': deltaCrs=35; break;
-            case 'OVERTAKING': deltaCrs=0; deltaSpd=-0.4*this.t.speed; break;
-            default: deltaCrs=25;
-        }
-        this.t._targetCourse=(this.t.course+deltaCrs+360)%360;
-        this.t._targetSpeed=Math.max(2,this.t.speed+deltaSpd);
+        const {deltaCourse, deltaSpeed} = ORCA.compute(
+            this.t,
+            this.t._sim.tracks,
+            this.t._sim.scenarioCfg
+        );
+        const dc = deltaCourse ?? 0;
+        const ds = deltaSpeed ?? 0;
+        this.t._targetCourse=(this.t.course+dc+360)%360;
+        this.t._targetSpeed=Math.max(2,this.t.speed+ds);
         this.t.state='EXECUTING_MANEUVER';
     }
     _applyManeuver(dt){
