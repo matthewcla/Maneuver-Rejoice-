@@ -16,13 +16,18 @@ main {
 }
 
 #simulator {
+    display: flex;
     flex-direction: column;
     flex: 1;
     overflow: hidden;
 }
 
 #radar-wrapper {
-    height: 100vh;;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
 }
 
 #right-pane {
