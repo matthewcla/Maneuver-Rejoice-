@@ -1,5 +1,10 @@
 import { OrcaWrapper } from './OrcaWrapper';
-import { classifyEncounter, getLegalPreferredVelocity, Encounter } from './ColregsBias';
+import {
+    ColregsBias,
+    classifyEncounter,
+    Encounter,
+    mergeEncounters,
+} from './ColregsBias';
 
 export interface Track {
     id: string;
@@ -21,7 +26,7 @@ export interface TrafficSimArgs {
 export class TrafficSim {
     private wrapper: OrcaWrapper;
     private tracks: Map<string, Track> = new Map();
-    private turnRateRadPerSec: number;
+    private bias: ColregsBias;
 
     constructor(args: TrafficSimArgs) {
         this.wrapper = new OrcaWrapper(
@@ -31,7 +36,7 @@ export class TrafficSim {
             args.radius,
             args.maxSpeed
         );
-        this.turnRateRadPerSec = args.turnRateRadPerSec;
+        this.bias = new ColregsBias(args.turnRateRadPerSec);
     }
 
     /** Adds a new vessel to the simulation. */
@@ -67,22 +72,32 @@ export class TrafficSim {
                 // Relative bearing from a to b
                 const relAB: [number, number] = [b.pos[0] - a.pos[0], b.pos[1] - a.pos[1]];
                 const bearingAB = this.bearingRelativeTo(relAB, a.vel);
-                a.encounter = classifyEncounter(bearingAB);
+                a.encounter = mergeEncounters(a.encounter || 'none', classifyEncounter(bearingAB));
 
                 // Relative bearing from b to a
                 const relBA: [number, number] = [-relAB[0], -relAB[1]];
                 const bearingBA = this.bearingRelativeTo(relBA, b.vel);
-                b.encounter = classifyEncounter(bearingBA);
+                b.encounter = mergeEncounters(b.encounter || 'none', classifyEncounter(bearingBA));
             }
         }
 
         // Set preferred velocities
         for (const t of trackList) {
-            const pref = getLegalPreferredVelocity(
-                t.encounter || 'none',
-                t.vel,
-                this.turnRateRadPerSec
-            );
+            // Navigate toward the next waypoint at current speed
+            let desired = t.vel;
+            const speed = Math.hypot(t.vel[0], t.vel[1]);
+            const wp = t.waypoints[0];
+            if (wp) {
+                const dir = this.normalize([wp[0] - t.pos[0], wp[1] - t.pos[1]]);
+                desired = [dir[0] * speed, dir[1] * speed];
+
+                // Waypoint reached?
+                if (Math.hypot(wp[0] - t.pos[0], wp[1] - t.pos[1]) < speed * 1.5) {
+                    t.waypoints.shift();
+                }
+            }
+
+            const pref = this.bias.apply(t.encounter || 'none', desired);
             this.wrapper.setPreferredVelocity(t.id, pref);
         }
 
