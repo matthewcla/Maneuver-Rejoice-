@@ -6,8 +6,43 @@ export type Encounter =
     | 'overtaking'
     | 'none';
 
+/** Order of encounters from highest to lowest priority. */
+const encounterPriority: Encounter[] = [
+    'headOn',
+    'crossingStarboard',
+    'crossingPort',
+    'overtaking',
+    'none',
+];
+
+/**
+ * Chooses the more urgent encounter between two classifications.
+ */
+export function mergeEncounters(a: Encounter, b: Encounter): Encounter {
+    return encounterPriority.indexOf(a) <= encounterPriority.indexOf(b) ? a : b;
+}
+
+/**
+ * Simple helper that applies COLREGS based course changes.
+ *
+ * The class currently exposes a single method `apply` which
+ * adjusts a velocity vector according to the encounter type
+ * and a configured starboard turn rate.  It can be extended
+ * in the future with more sophisticated heuristics.
+ */
 export class ColregsBias {
-    // Placeholder for COLREGS bias logic
+    constructor(private turnRateRadPerSec: number) {}
+
+    /**
+     * Returns a velocity vector that obeys basic COLREGS guidance.
+     */
+    apply(encounter: Encounter, current: [number, number]): [number, number] {
+        return getLegalPreferredVelocity(
+            encounter,
+            current,
+            this.turnRateRadPerSec
+        );
+    }
 }
 
 /**
@@ -20,12 +55,12 @@ export function classifyEncounter(bearingDeg: number): Encounter {
     // Normalize the angle to the range [0, 360).
     const b = ((bearingDeg % 360) + 360) % 360;
 
-    // Head on: +/-5 degrees around 180.
-    if (b >= 175 && b <= 185) {
+    // Head on: target dead ahead.
+    if (b <= 5 || b >= 355) {
         return 'headOn';
     }
 
-    // Overtaking: target is generally astern.
+    // Overtaking: target within the sector 112.5–247.5 deg.
     if (b >= 112.5 && b <= 247.5) {
         return 'overtaking';
     }
