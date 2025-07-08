@@ -28,6 +28,11 @@ export class TrafficSim {
     private tracks: Map<string, Track> = new Map();
     private bias: ColregsBias;
 
+    // Minimum allowed CPA distances in simulation units (nautical miles).
+    // 1000 yards ~ 0.5 nm, 500 yards ~ 0.25 nm.
+    private static readonly CPA_BOW_MIN = 1000 / 1852;
+    private static readonly CPA_STERN_MIN = 500 / 1852;
+
     constructor(args: TrafficSimArgs) {
         this.wrapper = new OrcaWrapper(
             args.timeStep,
@@ -81,7 +86,7 @@ export class TrafficSim {
             }
         }
 
-        // Set preferred velocities
+        // Set preferred velocities with CPA avoidance
         for (const t of trackList) {
             // Navigate toward the next waypoint at current speed
             let desired = t.vel;
@@ -97,8 +102,31 @@ export class TrafficSim {
                 }
             }
 
-            const pref = this.bias.apply(t.encounter || 'none', desired);
-            this.wrapper.setPreferredVelocity(t.id, pref);
+            // Apply CPA constraints relative to other tracks
+            let push: [number, number] = [0, 0];
+            for (const other of trackList) {
+                if (other === t) continue;
+                const { time: tcpa, dist: dcpa } = this.computeCPA(t, other);
+                if (tcpa < 0) continue;
+                const rel: [number, number] = [other.pos[0] - t.pos[0], other.pos[1] - t.pos[1]];
+                const bearing = this.bearingRelativeTo(rel, t.vel);
+                const enc = classifyEncounter(bearing);
+                const minDist =
+                    enc === 'headOn' || enc === 'crossingStarboard' || enc === 'crossingPort'
+                        ? TrafficSim.CPA_BOW_MIN
+                        : TrafficSim.CPA_STERN_MIN;
+                if (dcpa < minDist) {
+                    const dir = this.normalize([-rel[0], -rel[1]]);
+                    const factor = (minDist - dcpa) / minDist;
+                    push = [push[0] + dir[0] * factor * speed, push[1] + dir[1] * factor * speed];
+                }
+            }
+
+            const biased = this.bias.apply(t.encounter || 'none', [
+                desired[0] + push[0],
+                desired[1] + push[1],
+            ]);
+            this.wrapper.setPreferredVelocity(t.id, biased);
         }
 
         // Step the ORCA simulator
@@ -133,6 +161,26 @@ export class TrafficSim {
         const heading = Math.atan2(referenceVel[1], referenceVel[0]);
         const diff = bearing - heading;
         return (diff * 180) / Math.PI;
+    }
+
+    /**
+     * Computes time and distance of closest point of approach between two tracks.
+     */
+    private computeCPA(
+        a: Track,
+        b: Track
+    ): { time: number; dist: number } {
+        const rx = b.pos[0] - a.pos[0];
+        const ry = b.pos[1] - a.pos[1];
+        const vx = b.vel[0] - a.vel[0];
+        const vy = b.vel[1] - a.vel[1];
+
+        const v2 = vx * vx + vy * vy;
+        const t = v2 < 1e-6 ? 1e9 : -((rx * vx + ry * vy) / v2);
+        const xCPA = rx + vx * t;
+        const yCPA = ry + vy * t;
+        const d = Math.hypot(xCPA, yCPA);
+        return { time: t, dist: d };
     }
 }
 
