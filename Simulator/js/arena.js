@@ -53,6 +53,38 @@ const fsApi = {
   }
 };
 
+class SpatialIndex {
+  constructor(cellSize = 4) {
+    this.cellSize = cellSize;
+    this.grid = new Map();
+  }
+  _key(x, y) {
+    const ix = Math.floor(x / this.cellSize);
+    const iy = Math.floor(y / this.cellSize);
+    return `${ix},${iy}`;
+  }
+  clear() { this.grid.clear(); }
+  insert(obj) {
+    const key = this._key(obj.x, obj.y);
+    if (!this.grid.has(key)) this.grid.set(key, []);
+    this.grid.get(key).push(obj);
+  }
+  queryRadius(x, y, r) {
+    const ix = Math.floor(x / this.cellSize);
+    const iy = Math.floor(y / this.cellSize);
+    const range = Math.ceil(r / this.cellSize);
+    const res = [];
+    for (let dx = -range; dx <= range; dx++) {
+      for (let dy = -range; dy <= range; dy++) {
+        const key = `${ix + dx},${iy + dy}`;
+        const arr = this.grid.get(key);
+        if (arr) res.push(...arr);
+      }
+    }
+    return res;
+  }
+}
+
 class ScenarioGenerator {
     constructor(cfg){
         this.cfg = cfg;
@@ -151,22 +183,24 @@ class ScenarioGenerator {
 
 class ContactController {
     constructor(track){this.t=track;}
-    update(dtHours,allContacts,cfg){
+    update(dtHours,index,cfg){
         if(this.t.isUserControlled||this.t.isHazard) return;
         switch(this.t.state){
             case 'MONITORING':
-                if(this._collisionThreat(allContacts,cfg)){ this._planManeuver(); }
+                if(this._collisionThreat(index,cfg)){ this._planManeuver(); }
                 break;
             case 'CALCULATING_MANEUVER': break;
             case 'EXECUTING_MANEUVER':
-                this._applyManeuver(dtHours); break;
+                this._applyManeuver(dtHours,index); break;
             case 'RESUMING_COURSE':
                 this._returnToBase(dtHours); break;
         }
     }
-    _collisionThreat(all,cfg){
+    _collisionThreat(index,cfg){
+        const searchRadius = this.t._sim?.maxRange ?? 12;
+        const candidates = index.queryRadius(this.t.x,this.t.y,searchRadius);
         const own=this._asParticle(this.t);
-        for(const other of all){
+        for(const other of candidates){
             if(other===this.t||other.isHazard) continue;
             const tgt=this._asParticle(other);
             const {t,d}=solveCPA(own,tgt);
@@ -188,7 +222,7 @@ class ContactController {
         this.t._targetSpeed=Math.max(2,this.t.speed+deltaSpd);
         this.t.state='EXECUTING_MANEUVER';
     }
-    _applyManeuver(dt){
+    _applyManeuver(dt,index){
         const rateTurn=10*dt*60;
         const acc=1*dt*60;
         const diffC=((this.t._targetCourse - this.t.course + 540)%360)-180;
@@ -198,7 +232,7 @@ class ContactController {
         if(Math.abs(this.t.speed-this.t._targetSpeed)>acc){
             this.t.speed+=Math.sign(this.t._targetSpeed - this.t.speed)*acc;
         }else{ this.t.speed=this.t._targetSpeed; }
-        if(!this._collisionThreat([...this.t._sim.tracks],this.t._sim.scenarioCfg)){
+        if(!this._collisionThreat(index,this.t._sim.scenarioCfg)){
             this.t.state='RESUMING_COURSE';
         }
     }
@@ -350,6 +384,8 @@ class Simulator {
         this.showPolarPlot = true;
         this.showTrackIds = true;
         this.uiScaleFactor = 1;
+
+        this.contactIndex = new SpatialIndex(4);
 
         // Sync data panel visibility with feature toggles
         this.rmDataContainer.open   = this.showRelativeMotion;
@@ -811,14 +847,20 @@ class Simulator {
         this.ownShip.x += ownShipDist * Math.sin(this.toRadians(this.ownShip.course));
         this.ownShip.y += ownShipDist * Math.cos(this.toRadians(this.ownShip.course));
 
+        const dtH = (deltaTime/3600000)*Math.abs(this.simulationSpeed);
+
         this.tracks.forEach(track => {
             if (this.draggedItemId === track.id) return;
-
             const dist = track.speed * timeMultiplier;
             track.x += dist * Math.sin(this.toRadians(track.course));
             track.y += dist * Math.cos(this.toRadians(track.course));
-            const dtH = (deltaTime/3600000)*Math.abs(this.simulationSpeed);
-            track._controller?.update(dtH, this.tracks, this.scenarioCfg);
+        });
+
+        this.contactIndex.clear();
+        this.tracks.forEach(track => this.contactIndex.insert(track));
+
+        this.tracks.forEach(track => {
+            track._controller?.update(dtH, this.contactIndex, this.scenarioCfg);
         });
     }
 
