@@ -19,14 +19,26 @@ export interface TrafficSimArgs {
     /**
      * Prediction horizon for the ORCA solver in seconds. It should be long
      * enough that a vessel travelling at typical speeds (~10 m/s or 20 kts)
-     * covers at least the bow CPA distance. This works out to roughly
-     * 60–120 seconds for the default CPA values.
+     * covers at least the bow CPA distance. Recommended range is roughly
+     * 60–120 seconds for the default CPA values. Values outside this range
+     * may lead to overly cautious or overly aggressive avoidance behavior.
      */
     timeHorizon: number;
+    /**
+     * Maximum range (nm) to consider other vessels for avoidance. Recommended
+     * range is 4–10 nm. Small craft generally use 8–10 nm while large ships
+     * may opt for about 4 nm with a longer time horizon.
+     */
     neighborDist: number;
     radius: number;
     maxSpeed: number;
     turnRateRadPerSec: number;
+    /**
+     * Enable the additional CPA push applied on top of ORCA's preferred
+     * velocities. When disabled, the simulator relies solely on ORCA for
+     * collision avoidance.
+     */
+    enableCpaPush?: boolean;
 }
 
 const MPS_TO_NMPS = 1 / 1852;
