@@ -361,6 +361,9 @@ class Simulator {
         this.staticCtx = this.staticCanvas.getContext('2d');
         this.staticDirty = true;
 
+        // Track whether we've attached DOM event listeners
+        this.listenersAttached = false;
+
         // Bind methods to ensure correct `this` context
         this.gameLoop = this.gameLoop.bind(this);
         this.handlePointerDown = this.handlePointerDown.bind(this);
@@ -420,6 +423,8 @@ class Simulator {
 
     // --- Event Listener Setup ---
     _attachEventListeners() {
+        if (this.listenersAttached) return;
+
         // Canvas interaction
         if (window.PointerEvent) {
             this.canvas?.addEventListener('pointerdown', this.handlePointerDown);
@@ -575,6 +580,8 @@ class Simulator {
                 this._scheduleUIUpdate();
             }
         });
+
+        this.listenersAttached = true;
     }
 
     // --- Vector Time Toggle ---
