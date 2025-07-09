@@ -851,7 +851,7 @@ class Simulator {
     calculateAllData(track) {
         const dx = track.x - this.ownShip.x;
         const dy = track.y - this.ownShip.y;
-        track.range = Math.max(0, Math.min(359.9, Math.sqrt(dx**2 + dy**2)));
+        track.range = Math.max(0, Math.min(359.9, Math.sqrt(dx ** 2 + dy ** 2)));
         track.bearing = (this.toDegrees(Math.atan2(dx, dy)) + 360) % 360;
 
         const ownShipCanvasAngle = this.toRadians(this.bearingToCanvasAngle(this.ownShip.course));
@@ -864,7 +864,7 @@ class Simulator {
 
         const relVelX = targetVelX - ownShipVelX;
         const relVelY = targetVelY - ownShipVelY;
-        const relSpeed = Math.sqrt(relVelX**2 + relVelY**2);
+        const relSpeed = Math.sqrt(relVelX ** 2 + relVelY ** 2);
         const relVectorCanvasAngle = this.toDegrees(Math.atan2(relVelY, relVelX));
 
         if (!track.rmVector) track.rmVector = { x: 0, y: 0, speed: 0, bearing: 0 };
@@ -879,14 +879,14 @@ class Simulator {
 
 
         const dotProduct = (targetPosX * relVelX) + (targetPosY * relVelY);
-        if (!track.cpa) track.cpa = { range: '--', time: '--:--:--', brg: '--' };
+        if (!track.cpa) track.cpa = { range: NaN, time: NaN, bearing: NaN };
         if (relSpeed < 0.001) {
-            track.cpa.range = '--';
-            track.cpa.time = '--:--:--';
-            track.cpa.brg = '--';
+            track.cpa.range = NaN;
+            track.cpa.time = NaN;
+            track.cpa.bearing = NaN;
             track.hasPassedCPA = true;
         } else {
-            const tcpa = -dotProduct / (relSpeed**2);
+            const tcpa = -dotProduct / (relSpeed ** 2);
             track.hasPassedCPA = tcpa < 0;
             const cpaX = targetPosX + tcpa * relVelX;
             const cpaY = targetPosY + tcpa * relVelY;
@@ -895,30 +895,31 @@ class Simulator {
             track.cpaPosition.y = cpaY;
 
             if (track.hasPassedCPA) {
-                track.cpa.range = '-- nm';
-                track.cpa.time = '--:--:--';
-                track.cpa.brg = '--';
+                track.cpa.range = NaN;
+                track.cpa.time = NaN;
+                track.cpa.bearing = NaN;
             } else {
-                const cpaRange = Math.sqrt(cpaX**2 + cpaY**2);
+                const cpaRange = Math.sqrt(cpaX ** 2 + cpaY ** 2);
                 const cpaCanvasAngle = this.toDegrees(Math.atan2(cpaY, cpaX));
                 const cpaBearing = this.canvasAngleToBearing(cpaCanvasAngle);
-                const cpaQuarter = this.getRelativeQuarter(cpaBearing, this.ownShip.course);
-                track.cpa.range = `${cpaRange.toFixed(1)} nm`;
-                track.cpa.time = this.formatTime(tcpa);
-                track.cpa.brg = `${this.formatBearing(cpaBearing)} T / ${cpaQuarter}`;
+                track.cpa.range = cpaRange;
+                track.cpa.time = tcpa;
+                track.cpa.bearing = cpaBearing;
             }
         }
         const ownshipBearingFromTarget = (track.bearing + 180) % 360;
         const targetAngle = (ownshipBearingFromTarget - track.course + 360) % 360;
-        if (!track.rm) track.rm = { dir: '', spd: '', rate: '', angle: '', aspect: '' };
+        if (!track.rm) track.rm = { bearing: 0, speed: 0, rate: 0, angle: 0 };
 
-        // TODO: Only format bearing/speed strings for the selected track or when updating the UI, not for every track each frame.
+        track.rm.bearing = track.rmVector.bearing;
+        track.rm.speed = relSpeed;
 
-        track.rm.dir = `${this.formatBearing(track.rmVector.bearing)} T`;
-        track.rm.spd = `${relSpeed.toFixed(1)} kts`;
-        track.rm.rate = this.getBearingRate({x: relVelX, y: relVelY}, {x: targetPosX, y: targetPosY}, track.range);
-        track.rm.angle = `${this.formatBearing(targetAngle)} deg`;
-        track.rm.aspect = this.getAspect(targetAngle);
+        const crossProduct = targetPosX * relVelY - targetPosY * relVelX;
+        const bearingRateRadPerHour = track.range < 0.01 ? 0 : crossProduct / (track.range * track.range);
+        const bearingRateDpm = (bearingRateRadPerHour * 180 / Math.PI) / 60;
+        track.rm.rate = bearingRateDpm;
+
+        track.rm.angle = targetAngle;
     }
 
     calculateWindData() {
@@ -1307,16 +1308,40 @@ class Simulator {
         }
 
         const showRM = selectedTrack && this.showRelativeMotion;
-        this._setText('rm-dir', showRM ? selectedTrack.rm.dir : '--');
-        this._setText('rm-spd', showRM ? selectedTrack.rm.spd : '--');
-        this._setText('rm-rate', showRM ? selectedTrack.rm.rate : '--');
-        this._setText('rm-angle', showRM ? selectedTrack.rm.angle : '--');
-        this._setText('rm-aspect', showRM ? selectedTrack.rm.aspect : '--');
+        if (showRM) {
+            this._setText('rm-dir', `${this.formatBearing(selectedTrack.rm.bearing)} T`);
+            this._setText('rm-spd', `${selectedTrack.rm.speed.toFixed(1)} kts`);
+            const rateVal = selectedTrack.rm.rate;
+            let rateStr;
+            if (Math.abs(rateVal) < 0.01) {
+                rateStr = '0.00 STEADY';
+            } else if (rateVal > 0) {
+                rateStr = `${rateVal.toFixed(2)} LEFT`;
+            } else {
+                rateStr = `${Math.abs(rateVal).toFixed(2)} RIGHT`;
+            }
+            this._setText('rm-rate', rateStr);
+            this._setText('rm-angle', `${this.formatBearing(selectedTrack.rm.angle)} deg`);
+            this._setText('rm-aspect', this.getAspect(selectedTrack.rm.angle));
+        } else {
+            this._setText('rm-dir', '--');
+            this._setText('rm-spd', '--');
+            this._setText('rm-rate', '--');
+            this._setText('rm-angle', '--');
+            this._setText('rm-aspect', '--');
+        }
 
         const showCPA = selectedTrack && this.showCPAInfo && !selectedTrack.hasPassedCPA;
-        this._setText('cpa-brg', showCPA ? selectedTrack.cpa.brg : '--');
-        this._setText('cpa-rng', showCPA ? selectedTrack.cpa.range : '--');
-        this._setText('cpa-time', showCPA ? selectedTrack.cpa.time : '--');
+        if (showCPA) {
+            const q = this.getRelativeQuarter(selectedTrack.cpa.bearing, this.ownShip.course);
+            this._setText('cpa-brg', `${this.formatBearing(selectedTrack.cpa.bearing)} T / ${q}`);
+            this._setText('cpa-rng', `${selectedTrack.cpa.range.toFixed(1)} nm`);
+            this._setText('cpa-time', this.formatTime(selectedTrack.cpa.time));
+        } else {
+            this._setText('cpa-brg', '--');
+            this._setText('cpa-rng', '--');
+            this._setText('cpa-time', '--');
+        }
 
         const showTrueWind = this.showWeather;
         const showRelWind = this.showWeather && this.showRelativeMotion;
