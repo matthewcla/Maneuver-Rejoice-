@@ -118,7 +118,7 @@ export class TrafficSim {
             let push: [number, number] = [0, 0];
             for (const other of trackList) {
                 if (other === t) continue;
-                const { time: tcpa, dist: dcpa } = this.computeCPA(t, other);
+                const { time: tcpa, dist: dcpa } = computeCPA(t, other);
                 if (tcpa < 0) continue;
                 const rel: [number, number] = [other.pos[0] - t.pos[0], other.pos[1] - t.pos[1]];
                 const bearing = this.bearingRelativeTo(rel, t.vel);
@@ -182,24 +182,25 @@ export class TrafficSim {
         return (diff * 180) / Math.PI;
     }
 
-    /**
-     * Computes time and distance of closest point of approach between two tracks.
-     */
-    private computeCPA(
-        a: Track,
-        b: Track
-    ): { time: number; dist: number } {
-        const rx = b.pos[0] - a.pos[0];
-        const ry = b.pos[1] - a.pos[1];
-        const vx = b.vel[0] - a.vel[0];
-        const vy = b.vel[1] - a.vel[1];
+}
 
-        const v2 = vx * vx + vy * vy;
-        const t = v2 < 1e-6 ? 1e9 : -((rx * vx + ry * vy) / v2);
-        const xCPA = rx + vx * t;
-        const yCPA = ry + vy * t;
-        const d = Math.hypot(xCPA, yCPA);
-        return { time: t, dist: d };
-    }
+/**
+ * Computes time and distance of closest point of approach between two tracks.
+ */
+export function computeCPA(
+    a: Track,
+    b: Track
+): { time: number; dist: number } {
+    const rx = b.pos[0] - a.pos[0];
+    const ry = b.pos[1] - a.pos[1];
+    const vx = b.vel[0] - a.vel[0];
+    const vy = b.vel[1] - a.vel[1];
+
+    const v2 = vx * vx + vy * vy;
+    const t = v2 < 1e-6 ? 1e9 : -((rx * vx + ry * vy) / v2);
+    const xCPA = rx + vx * t;
+    const yCPA = ry + vy * t;
+    const d = Math.hypot(xCPA, yCPA);
+    return { time: t, dist: d };
 }
 
