@@ -43,6 +43,11 @@ export class TrafficSim {
     // equates to roughly one to two minutes.
     private static readonly CPA_BOW_MIN = 1000 / 1852;
     private static readonly CPA_STERN_MIN = 500 / 1852;
+    // Tunable gain applied to avoidance pushes. A value greater than 1 results
+    // in slightly more aggressive maneuvers when vessels approach the minimum
+    // CPA distance.  This is tweaked using the sample scenarios in the unit
+    // tests to keep separation distances above the configured thresholds.
+    private static readonly AVOIDANCE_GAIN = 1.5;
 
     constructor(args: TrafficSimArgs) {
         this.wrapper = new OrcaWrapper(
@@ -135,8 +140,10 @@ export class TrafficSim {
                     // excessive corrections for very small tcpa values.
                     factor *= 1 / Math.max(tcpa, 1);
                     push = [
-                        push[0] + dir[0] * factor * speed,
-                        push[1] + dir[1] * factor * speed,
+                        push[0] +
+                            dir[0] * factor * speed * TrafficSim.AVOIDANCE_GAIN,
+                        push[1] +
+                            dir[1] * factor * speed * TrafficSim.AVOIDANCE_GAIN,
                     ];
                 }
             }
