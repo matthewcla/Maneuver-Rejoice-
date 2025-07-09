@@ -120,8 +120,15 @@ export class TrafficSim {
                         : TrafficSim.CPA_STERN_MIN;
                 if (dcpa < minDist) {
                     const dir = this.normalize([-rel[0], -rel[1]]);
-                    const factor = (minDist - dcpa) / minDist;
-                    push = [push[0] + dir[0] * factor * speed, push[1] + dir[1] * factor * speed];
+                    let factor = (minDist - dcpa) / minDist;
+                    // Give closer CPA threats higher priority by scaling with
+                    // the inverse time to CPA. Clamp the scale to avoid
+                    // excessive corrections for very small tcpa values.
+                    factor *= 1 / Math.max(tcpa, 1);
+                    push = [
+                        push[0] + dir[0] * factor * speed,
+                        push[1] + dir[1] * factor * speed,
+                    ];
                 }
             }
 
