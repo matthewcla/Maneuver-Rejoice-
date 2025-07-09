@@ -1,7 +1,64 @@
-export class OrcaWrapper {
-  constructor(private id: string) {}
+import * as RVO from 'rvo2';
 
-  simulateStep(delta: number): void {
-    console.log(`Simulating ORCA step for ${this.id} with dt=${delta}`);
+export class OrcaWrapper {
+  private sim: any;
+  private agents = new Map<string, number>();
+
+  constructor(
+    private timeStep: number,
+    private timeHorizon: number,
+    private neighborDist: number,
+    private radius: number,
+    private maxSpeed: number
+  ) {
+    // maxNeighbors is left as default (10)
+    const maxNeighbors = 10;
+    const timeHorizonObst = this.timeHorizon;
+    this.sim = new (RVO as any).RVOSimulator(
+      this.timeStep,
+      this.neighborDist,
+      maxNeighbors,
+      this.timeHorizon,
+      timeHorizonObst,
+      this.radius,
+      this.maxSpeed
+    );
+  }
+
+  addAgent(id: string, pos: [number, number], vel: [number, number]): void {
+    const handle = this.sim.addAgent(
+      pos,
+      this.neighborDist,
+      10,
+      this.timeHorizon,
+      this.timeHorizon,
+      this.radius,
+      this.maxSpeed,
+      vel
+    );
+    this.agents.set(id, handle);
+  }
+
+  setAgentState(id: string, pos: [number, number], vel: [number, number]): void {
+    const handle = this.agents.get(id);
+    if (handle === undefined) return;
+    this.sim.setAgentPosition(handle, pos);
+    this.sim.setAgentVelocity(handle, vel);
+  }
+
+  setPreferredVelocity(id: string, vel: [number, number]): void {
+    const handle = this.agents.get(id);
+    if (handle === undefined) return;
+    this.sim.setAgentPrefVelocity(handle, vel);
+  }
+
+  step(): void {
+    this.sim.doStep();
+  }
+
+  getVelocity(id: string): [number, number] {
+    const handle = this.agents.get(id);
+    if (handle === undefined) return [0, 0];
+    return this.sim.getAgentVelocity(handle);
   }
 }
