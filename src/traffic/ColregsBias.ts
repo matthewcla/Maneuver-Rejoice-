@@ -47,3 +47,33 @@ export function classifyEncounter(bearingDeg: number): Encounter {
 
   return 'none';
 }
+
+function rotate2D(v: [number, number], angle: number): [number, number] {
+  const [x, y] = v;
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  return [x * c - y * s, x * s + y * c];
+}
+
+export function legalPreferredVelocity(
+  enc: Encounter,
+  curVel: [number, number],
+  turnRateRad: number
+): [number, number] {
+  const ang = Math.abs(turnRateRad);
+  switch (enc) {
+    case 'headOn':
+    case 'crossingStarboard':
+      return rotate2D(curVel, -ang);
+    case 'crossingPort':
+      return rotate2D(curVel, ang);
+    case 'overtaking': {
+      const speed = Math.hypot(curVel[0], curVel[1]) * 0.9;
+      if (speed === 0) return curVel;
+      const heading = Math.atan2(curVel[1], curVel[0]);
+      return [Math.cos(heading) * speed, Math.sin(heading) * speed];
+    }
+    default:
+      return curVel;
+  }
+}
