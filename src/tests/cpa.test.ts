@@ -1,4 +1,4 @@
-import { TrafficSim } from '../traffic/TrafficSim';
+import { TrafficSim, computeCPA } from '../traffic/TrafficSim';
 
 // Simple stub for the ORCA wrapper used by tests. It exposes only the minimal
 // API required by `TrafficSim` and stores preferred velocities so the tests can
@@ -48,7 +48,7 @@ describe('computeCPA', () => {
 
         const a: any = { id: 'a', pos: [0, 0], vel: [1, 0], waypoints: [] };
         const b: any = { id: 'b', pos: [1, 0], vel: [1, 0], waypoints: [] };
-        const cpa = (sim as any).computeCPA(a, b);
+        const cpa = computeCPA(a, b);
         expect(cpa.time).toBeGreaterThan(1e8);
     });
 
@@ -63,7 +63,7 @@ describe('computeCPA', () => {
         });
         const a: any = { id: 'a', pos: [0, 0], vel: [1, 0], waypoints: [] };
         const b: any = { id: 'b', pos: [1, 0], vel: [-1, 0], waypoints: [] };
-        const cpa = (sim as any).computeCPA(a, b);
+        const cpa = computeCPA(a, b);
         expect(cpa.dist).toBeCloseTo(0, 5);
     });
 
