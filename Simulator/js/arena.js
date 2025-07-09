@@ -361,6 +361,11 @@ class Simulator {
         this.staticCtx = this.staticCanvas.getContext('2d');
         this.staticDirty = true;
 
+        // Preallocated buffers reused each frame
+        this._visibleTracks = [];
+        this._tmpVec1 = { x: 0, y: 0 };
+        this._tmpVec2 = { x: 0, y: 0 };
+
         // Track whether we've attached DOM event listeners
         this.listenersAttached = false;
 
@@ -405,7 +410,6 @@ class Simulator {
             });
         }
 
-        this.tracks.forEach(t => this.calculateAllData(t));
         this.calculateWindData();
 
         this.updateButtonStyles();
@@ -601,10 +605,9 @@ class Simulator {
         this.markSceneDirty();
     }
 
-    // TODO: Optimize the simulation loop to handle ~50-100 tracks smoothly.
-    // - Avoid creating new objects or strings every frame (reuse them instead).
-    // - Do minimal work for off-screen or non-selected tracks.
-    // - Keep each frame under ~16ms.
+    // Optimized simulation loop for ~50-100 tracks.
+    // Reuses objects and processes only visible or selected tracks
+    // to keep frames under ~16ms.
     // --- Animation & Optimizations ---
 
     gameLoop(timestamp) {
@@ -619,9 +622,9 @@ class Simulator {
         }
 
         if (this.sceneDirty) {
-            this.tracks.forEach(t => this.calculateAllData(t));
+            this.refreshTrackData();
             this.calculateWindData();
-            this.drawRadar();
+            this.drawRadar(this._visibleTracks);
             this.sceneDirty = false;
         }
 
@@ -822,9 +825,33 @@ class Simulator {
         });
     }
 
+    updateBasicGeometry(track) {
+        const v = this._tmpVec1;
+        v.x = track.x - this.ownShip.x;
+        v.y = track.y - this.ownShip.y;
+        track.range = Math.max(0, Math.min(359.9, Math.sqrt(v.x * v.x + v.y * v.y)));
+        track.bearing = (this.toDegrees(Math.atan2(v.x, v.y)) + 360) % 360;
+    }
+
+    refreshTrackData(formatAll = false) {
+        const visible = this._visibleTracks;
+        visible.length = 0;
+        const sel = this.selectedTrackId;
+        const hov = this.hoveredTrackId;
+        for (const t of this.tracks) {
+            this.updateBasicGeometry(t);
+            const inRange = t.range <= this.maxRange;
+            if (formatAll || inRange || t.id === sel || t.id === hov) {
+                this.calculateAllData(t);
+            }
+            if (inRange) visible.push(t);
+        }
+    }
+
     calculateAllData(track) {
         const dx = track.x - this.ownShip.x;
         const dy = track.y - this.ownShip.y;
+
         // Store the true distance between own ship and the track
         track.range = Math.sqrt(dx ** 2 + dy ** 2);
         track.bearing = (this.toDegrees(Math.atan2(dx, dy)) + 360) % 360;
@@ -839,7 +866,7 @@ class Simulator {
 
         const relVelX = targetVelX - ownShipVelX;
         const relVelY = targetVelY - ownShipVelY;
-        const relSpeed = Math.sqrt(relVelX**2 + relVelY**2);
+        const relSpeed = Math.sqrt(relVelX ** 2 + relVelY ** 2);
         const relVectorCanvasAngle = this.toDegrees(Math.atan2(relVelY, relVelX));
 
         if (!track.rmVector) track.rmVector = { x: 0, y: 0, speed: 0, bearing: 0 };
@@ -854,14 +881,14 @@ class Simulator {
 
 
         const dotProduct = (targetPosX * relVelX) + (targetPosY * relVelY);
-        if (!track.cpa) track.cpa = { range: '--', time: '--:--:--', brg: '--' };
+        if (!track.cpa) track.cpa = { range: NaN, time: NaN, bearing: NaN };
         if (relSpeed < 0.001) {
-            track.cpa.range = '--';
-            track.cpa.time = '--:--:--';
-            track.cpa.brg = '--';
+            track.cpa.range = NaN;
+            track.cpa.time = NaN;
+            track.cpa.bearing = NaN;
             track.hasPassedCPA = true;
         } else {
-            const tcpa = -dotProduct / (relSpeed**2);
+            const tcpa = -dotProduct / (relSpeed ** 2);
             track.hasPassedCPA = tcpa < 0;
             const cpaX = targetPosX + tcpa * relVelX;
             const cpaY = targetPosY + tcpa * relVelY;
@@ -870,30 +897,31 @@ class Simulator {
             track.cpaPosition.y = cpaY;
 
             if (track.hasPassedCPA) {
-                track.cpa.range = '-- nm';
-                track.cpa.time = '--:--:--';
-                track.cpa.brg = '--';
+                track.cpa.range = NaN;
+                track.cpa.time = NaN;
+                track.cpa.bearing = NaN;
             } else {
-                const cpaRange = Math.sqrt(cpaX**2 + cpaY**2);
+                const cpaRange = Math.sqrt(cpaX ** 2 + cpaY ** 2);
                 const cpaCanvasAngle = this.toDegrees(Math.atan2(cpaY, cpaX));
                 const cpaBearing = this.canvasAngleToBearing(cpaCanvasAngle);
-                const cpaQuarter = this.getRelativeQuarter(cpaBearing, this.ownShip.course);
-                track.cpa.range = `${cpaRange.toFixed(1)} nm`;
-                track.cpa.time = this.formatTime(tcpa);
-                track.cpa.brg = `${this.formatBearing(cpaBearing)} T / ${cpaQuarter}`;
+                track.cpa.range = cpaRange;
+                track.cpa.time = tcpa;
+                track.cpa.bearing = cpaBearing;
             }
         }
         const ownshipBearingFromTarget = (track.bearing + 180) % 360;
         const targetAngle = (ownshipBearingFromTarget - track.course + 360) % 360;
-        if (!track.rm) track.rm = { dir: '', spd: '', rate: '', angle: '', aspect: '' };
+        if (!track.rm) track.rm = { bearing: 0, speed: 0, rate: 0, angle: 0 };
 
-        // TODO: Only format bearing/speed strings for the selected track or when updating the UI, not for every track each frame.
+        track.rm.bearing = track.rmVector.bearing;
+        track.rm.speed = relSpeed;
 
-        track.rm.dir = `${this.formatBearing(track.rmVector.bearing)} T`;
-        track.rm.spd = `${relSpeed.toFixed(1)} kts`;
-        track.rm.rate = this.getBearingRate({x: relVelX, y: relVelY}, {x: targetPosX, y: targetPosY}, track.range);
-        track.rm.angle = `${this.formatBearing(targetAngle)} deg`;
-        track.rm.aspect = this.getAspect(targetAngle);
+        const crossProduct = targetPosX * relVelY - targetPosY * relVelX;
+        const bearingRateRadPerHour = track.range < 0.01 ? 0 : crossProduct / (track.range * track.range);
+        const bearingRateDpm = (bearingRateRadPerHour * 180 / Math.PI) / 60;
+        track.rm.rate = bearingRateDpm;
+
+        track.rm.angle = targetAngle;
     }
 
     calculateWindData() {
@@ -916,7 +944,7 @@ class Simulator {
     }
 
     // --- Drawing ---
-    drawRadar() {
+    drawRadar(tracks = this.tracks) {
         const size = this.canvas.width;
         if (size === 0) return;
         const center = size / 2;
@@ -933,8 +961,7 @@ class Simulator {
             this.drawWeatherInfo(center, radius);
         }
         this.drawOwnShipIcon(center, radius);
-        this.tracks.forEach(track => {
-            if (track.range > this.maxRange) return;
+        tracks.forEach(track => {
             this.drawTarget(center, radius, track);
             if(this.showRelativeMotion) {
                 this.drawRelativeMotionVector(center, radius, track);
@@ -1255,7 +1282,9 @@ class Simulator {
     updatePanelsAndRedraw() {
         this.updateOwnShipPanel();
         this.updateDataPanels();
-        this.drawRadar();
+        this.refreshTrackData(true);
+        this.calculateWindData();
+        this.drawRadar(this._visibleTracks);
     }
 
     updateOwnShipPanel() {
@@ -1281,16 +1310,40 @@ class Simulator {
         }
 
         const showRM = selectedTrack && this.showRelativeMotion;
-        this._setText('rm-dir', showRM ? selectedTrack.rm.dir : '--');
-        this._setText('rm-spd', showRM ? selectedTrack.rm.spd : '--');
-        this._setText('rm-rate', showRM ? selectedTrack.rm.rate : '--');
-        this._setText('rm-angle', showRM ? selectedTrack.rm.angle : '--');
-        this._setText('rm-aspect', showRM ? selectedTrack.rm.aspect : '--');
+        if (showRM) {
+            this._setText('rm-dir', `${this.formatBearing(selectedTrack.rm.bearing)} T`);
+            this._setText('rm-spd', `${selectedTrack.rm.speed.toFixed(1)} kts`);
+            const rateVal = selectedTrack.rm.rate;
+            let rateStr;
+            if (Math.abs(rateVal) < 0.01) {
+                rateStr = '0.00 STEADY';
+            } else if (rateVal > 0) {
+                rateStr = `${rateVal.toFixed(2)} LEFT`;
+            } else {
+                rateStr = `${Math.abs(rateVal).toFixed(2)} RIGHT`;
+            }
+            this._setText('rm-rate', rateStr);
+            this._setText('rm-angle', `${this.formatBearing(selectedTrack.rm.angle)} deg`);
+            this._setText('rm-aspect', this.getAspect(selectedTrack.rm.angle));
+        } else {
+            this._setText('rm-dir', '--');
+            this._setText('rm-spd', '--');
+            this._setText('rm-rate', '--');
+            this._setText('rm-angle', '--');
+            this._setText('rm-aspect', '--');
+        }
 
         const showCPA = selectedTrack && this.showCPAInfo && !selectedTrack.hasPassedCPA;
-        this._setText('cpa-brg', showCPA ? selectedTrack.cpa.brg : '--');
-        this._setText('cpa-rng', showCPA ? selectedTrack.cpa.range : '--');
-        this._setText('cpa-time', showCPA ? selectedTrack.cpa.time : '--');
+        if (showCPA) {
+            const q = this.getRelativeQuarter(selectedTrack.cpa.bearing, this.ownShip.course);
+            this._setText('cpa-brg', `${this.formatBearing(selectedTrack.cpa.bearing)} T / ${q}`);
+            this._setText('cpa-rng', `${selectedTrack.cpa.range.toFixed(1)} nm`);
+            this._setText('cpa-time', this.formatTime(selectedTrack.cpa.time));
+        } else {
+            this._setText('cpa-brg', '--');
+            this._setText('cpa-rng', '--');
+            this._setText('cpa-time', '--');
+        }
 
         const showTrueWind = this.showWeather;
         const showRelWind = this.showWeather && this.showRelativeMotion;
@@ -1701,7 +1754,6 @@ class Simulator {
         newTrack._sim = this;
         this.tracks.push(newTrack);
         this.selectedTrackId = newId;
-        this.calculateAllData(newTrack);
         this.updatePanelsAndRedraw();
         this.markSceneDirty();
     }
