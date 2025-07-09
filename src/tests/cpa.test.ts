@@ -1,4 +1,4 @@
-import { TrafficSim } from '../traffic/TrafficSim';
+import { TrafficSim, computeCPA } from '../traffic/TrafficSim';
 
 // Simple stub for the ORCA wrapper used by tests. It exposes only the minimal
 // API required by `TrafficSim` and stores preferred velocities so the tests can
@@ -39,7 +39,7 @@ describe('computeCPA', () => {
     test('returns large time when velocities are parallel', () => {
         const sim = new TrafficSim({
             timeStep: 1,
-            timeHorizon: 5,
+            timeHorizon: 90,
             neighborDist: 10,
             radius: 0.1,
             maxSpeed: 10,
@@ -48,14 +48,14 @@ describe('computeCPA', () => {
 
         const a: any = { id: 'a', pos: [0, 0], vel: [1, 0], waypoints: [] };
         const b: any = { id: 'b', pos: [1, 0], vel: [1, 0], waypoints: [] };
-        const cpa = (sim as any).computeCPA(a, b);
+        const cpa = computeCPA(a, b);
         expect(cpa.time).toBeGreaterThan(1e8);
     });
 
     test('computes symmetric approach distance', () => {
         const sim = new TrafficSim({
             timeStep: 1,
-            timeHorizon: 5,
+            timeHorizon: 90,
             neighborDist: 10,
             radius: 0.1,
             maxSpeed: 10,
@@ -63,14 +63,14 @@ describe('computeCPA', () => {
         });
         const a: any = { id: 'a', pos: [0, 0], vel: [1, 0], waypoints: [] };
         const b: any = { id: 'b', pos: [1, 0], vel: [-1, 0], waypoints: [] };
-        const cpa = (sim as any).computeCPA(a, b);
+        const cpa = computeCPA(a, b);
         expect(cpa.dist).toBeCloseTo(0, 5);
     });
 
     test('distant CPA yields smaller course correction', () => {
         const args = {
             timeStep: 1,
-            timeHorizon: 5,
+            timeHorizon: 90,
             neighborDist: 10,
             radius: 0.1,
             maxSpeed: 10,

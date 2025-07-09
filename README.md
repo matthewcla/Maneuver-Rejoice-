@@ -12,3 +12,20 @@ All distances and positions are measured in nautical miles (nm). Speeds within
 the simulation are stored as nautical miles per second (nm/s). When adding a new
 track, any provided speed in metres per second is converted to nm/s before being
 applied.
+
+## Example
+
+```ts
+import { TrafficSim } from './src/traffic/TrafficSim';
+
+const sim = new TrafficSim({
+    timeStep: 1,
+    // 90 s horizon ensures contacts at the bow CPA distance are detected for
+    // vessels moving around 10 m/s (~20 kts).
+    timeHorizon: 90,
+    neighborDist: 10,
+    radius: 0.1,
+    maxSpeed: 10,
+    turnRateRadPerSec: 0.1,
+});
+```
