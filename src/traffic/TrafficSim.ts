@@ -27,6 +27,12 @@ export interface TrafficSimArgs {
     radius: number;
     maxSpeed: number;
     turnRateRadPerSec: number;
+    /**
+     * Enable the additional CPA push applied on top of ORCA's preferred
+     * velocities. When disabled, the simulator relies solely on ORCA for
+     * collision avoidance.
+     */
+    enableCpaPush?: boolean;
 }
 
 const MPS_TO_NMPS = 1 / 1852;
@@ -35,6 +41,7 @@ export class TrafficSim {
     private wrapper: OrcaWrapper;
     private tracks: Map<string, Track> = new Map();
     private bias: ColregsBias;
+    private enableCpaPush: boolean;
 
     // Minimum allowed CPA distances in simulation units (nautical miles).
     // 1000 yards ~ 0.5 nm, 500 yards ~ 0.25 nm. The `timeHorizon` value passed
@@ -58,6 +65,7 @@ export class TrafficSim {
             args.maxSpeed
         );
         this.bias = new ColregsBias(args.turnRateRadPerSec);
+        this.enableCpaPush = args.enableCpaPush ?? true;
     }
 
     /** Adds a new vessel to the simulation. */
@@ -121,30 +129,32 @@ export class TrafficSim {
 
             // Apply CPA constraints relative to other tracks
             let push: [number, number] = [0, 0];
-            for (const other of trackList) {
-                if (other === t) continue;
-                const { time: tcpa, dist: dcpa } = computeCPA(t, other);
-                if (tcpa < 0) continue;
-                const rel: [number, number] = [other.pos[0] - t.pos[0], other.pos[1] - t.pos[1]];
-                const bearing = this.bearingRelativeTo(rel, t.vel);
-                const enc = classifyEncounter(bearing);
-                const minDist =
-                    enc === 'headOn' || enc === 'crossingStarboard' || enc === 'crossingPort'
-                        ? TrafficSim.CPA_BOW_MIN
-                        : TrafficSim.CPA_STERN_MIN;
-                if (dcpa < minDist) {
-                    const dir = this.normalize([-rel[0], -rel[1]]);
-                    let factor = (minDist - dcpa) / minDist;
-                    // Give closer CPA threats higher priority by scaling with
-                    // the inverse time to CPA. Clamp the scale to avoid
-                    // excessive corrections for very small tcpa values.
-                    factor *= 1 / Math.max(tcpa, 1);
-                    push = [
-                        push[0] +
-                            dir[0] * factor * speed * TrafficSim.AVOIDANCE_GAIN,
-                        push[1] +
-                            dir[1] * factor * speed * TrafficSim.AVOIDANCE_GAIN,
-                    ];
+            if (this.enableCpaPush) {
+                for (const other of trackList) {
+                    if (other === t) continue;
+                    const { time: tcpa, dist: dcpa } = computeCPA(t, other);
+                    if (tcpa < 0) continue;
+                    const rel: [number, number] = [other.pos[0] - t.pos[0], other.pos[1] - t.pos[1]];
+                    const bearing = this.bearingRelativeTo(rel, t.vel);
+                    const enc = classifyEncounter(bearing);
+                    const minDist =
+                        enc === 'headOn' || enc === 'crossingStarboard' || enc === 'crossingPort'
+                            ? TrafficSim.CPA_BOW_MIN
+                            : TrafficSim.CPA_STERN_MIN;
+                    if (dcpa < minDist) {
+                        const dir = this.normalize([-rel[0], -rel[1]]);
+                        let factor = (minDist - dcpa) / minDist;
+                        // Give closer CPA threats higher priority by scaling with
+                        // the inverse time to CPA. Clamp the scale to avoid
+                        // excessive corrections for very small tcpa values.
+                        factor *= 1 / Math.max(tcpa, 1);
+                        push = [
+                            push[0] +
+                                dir[0] * factor * speed * TrafficSim.AVOIDANCE_GAIN,
+                            push[1] +
+                                dir[1] * factor * speed * TrafficSim.AVOIDANCE_GAIN,
+                        ];
+                    }
                 }
             }
 

@@ -27,5 +27,7 @@ const sim = new TrafficSim({
     radius: 0.1,
     maxSpeed: 10,
     turnRateRadPerSec: 0.1,
+    // Set to false to rely solely on ORCA without the additional CPA push.
+    enableCpaPush: true,
 });
 ```

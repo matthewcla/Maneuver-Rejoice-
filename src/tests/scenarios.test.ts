@@ -77,3 +77,43 @@ describe('multi-ship scenarios', () => {
     }
 });
 
+describe('multi-ship scenarios without CPA push', () => {
+    const args = {
+        timeStep: 1,
+        timeHorizon: 90,
+        neighborDist: 10,
+        radius: 0.1,
+        maxSpeed: 20,
+        turnRateRadPerSec: 0.1,
+        enableCpaPush: false,
+    };
+
+    for (const scenario of Scenarios.all()) {
+        test(`${scenario.name} maintains CPA`, () => {
+            const sim = new TrafficSim(args);
+            (sim as any).wrapper = new StubWrapper(args.timeStep);
+
+            for (const t of scenario.tracks) {
+                sim.addTrack(t.id, t.startPos, t.waypoints, t.speed);
+            }
+
+            let minDist = Infinity;
+            for (let i = 0; i < 60; i++) {
+                sim.tick();
+                const snap = sim.getSnapshot();
+                for (let a = 0; a < snap.length; a++) {
+                    for (let b = a + 1; b < snap.length; b++) {
+                        const d = Math.hypot(
+                            snap[a].pos[0] - snap[b].pos[0],
+                            snap[a].pos[1] - snap[b].pos[1]
+                        );
+                        minDist = Math.min(minDist, d);
+                    }
+                }
+            }
+
+            expect(minDist).toBeGreaterThanOrEqual(CPA_MIN);
+        });
+    }
+});
+
