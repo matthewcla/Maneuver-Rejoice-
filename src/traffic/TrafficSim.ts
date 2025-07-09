@@ -210,7 +210,13 @@ export class TrafficSim {
                     if (tcpa < 0) continue;
                     const rel: [number, number] = [other.pos[0] - t.pos[0], other.pos[1] - t.pos[1]];
                     const bearing = this.bearingRelativeTo(rel, t.vel);
-                    const enc = classifyEncounter(bearing);
+                    let enc = classifyEncounter(bearing);
+                    // Treat stationary contacts as head-on to enforce the larger
+                    // CPA distance and trigger an avoidance manoeuvre.
+                    const otherSpeed = Math.hypot(other.vel[0], other.vel[1]);
+                    if (otherSpeed < 1e-3) {
+                        enc = 'headOn';
+                    }
                     const minDist =
                         enc === 'headOn' || enc === 'crossingStarboard' || enc === 'crossingPort'
                             ? TrafficSim.CPA_BOW_MIN
