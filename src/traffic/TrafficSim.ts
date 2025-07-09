@@ -21,18 +21,69 @@ export interface TrafficSimArgs {
     /**
      * Prediction horizon for the ORCA solver in seconds. It should be long
      * enough that a vessel travelling at typical speeds (~10 m/s or 20 kts)
-     * covers at least the bow CPA distance. This works out to roughly
-     * 60–120 seconds for the default CPA values.
+     * covers at least the bow CPA distance. Recommended range is roughly
+     * 60–120 seconds for the default CPA values. Values outside this range
+     * may lead to overly cautious or overly aggressive avoidance behavior.
      */
     timeHorizon: number;
+    /**
+     * Maximum range (nm) to consider other vessels for avoidance. Recommended
+     * range is 4–10 nm. Small craft generally use 8–10 nm while large ships
+     * may opt for about 4 nm with a longer time horizon.
+     */
     neighborDist: number;
     radius: number;
     maxSpeed: number;
     turnRateRadPerSec: number;
+    /**
+     * Enable the additional CPA push applied on top of ORCA's preferred
+     * velocities. When disabled, the simulator relies solely on ORCA for
+     * collision avoidance.
+     */
+    enableCpaPush?: boolean;
 }
 
 const MPS_TO_NMPS = 1 / 1852;
 const MPS_TO_KTS = 3600 / 1852;
+
+class GridIndex {
+    private buckets: Map<string, Track[]> = new Map();
+    constructor(private cellSize: number) {}
+
+    rebuild(tracks: Track[]): void {
+        this.buckets.clear();
+        for (const t of tracks) {
+            const key = this.key(t.pos);
+            let bucket = this.buckets.get(key);
+            if (!bucket) {
+                bucket = [];
+                this.buckets.set(key, bucket);
+            }
+            bucket.push(t);
+        }
+    }
+
+    query(pos: [number, number]): Track[] {
+        const cx = Math.floor(pos[0] / this.cellSize);
+        const cy = Math.floor(pos[1] / this.cellSize);
+        const result: Track[] = [];
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                const bucket = this.buckets.get(`${cx + dx},${cy + dy}`);
+                if (bucket) {
+                    result.push(...bucket);
+                }
+            }
+        }
+        return result;
+    }
+
+    private key(pos: [number, number]): string {
+        const cx = Math.floor(pos[0] / this.cellSize);
+        const cy = Math.floor(pos[1] / this.cellSize);
+        return `${cx},${cy}`;
+    }
+}
 
 export class TrafficSim {
     private wrapper: OrcaWrapper;
@@ -97,6 +148,9 @@ export class TrafficSim {
     tick(): void {
         const trackList = Array.from(this.tracks.values());
 
+        // Rebuild spatial index with current positions
+        this.index.rebuild(trackList);
+
         // Reset encounters
         for (const t of trackList) {
             t.encounter = 'none';
@@ -136,10 +190,15 @@ export class TrafficSim {
                 }
             }
 
-            // Apply CPA constraints relative to other tracks
+            // Apply CPA constraints relative to nearby tracks
             let push: [number, number] = [0, 0];
-            for (const other of trackList) {
+            for (const other of this.index.query(t.pos)) {
                 if (other === t) continue;
+                const distNow = Math.hypot(
+                    other.pos[0] - t.pos[0],
+                    other.pos[1] - t.pos[1]
+                );
+                if (distNow > this.neighborDist) continue;
                 const { time: tcpa, dist: dcpa } = computeCPA(t, other);
                 if (tcpa < 0) continue;
                 const rel: [number, number] = [other.pos[0] - t.pos[0], other.pos[1] - t.pos[1]];
