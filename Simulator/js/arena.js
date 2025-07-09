@@ -1670,7 +1670,9 @@ class Simulator {
         const center = this.canvas.width / 2;
         const radius = center * 0.9;
         const hitTolerance = 15 * this.DPR;
-        const minVecPickDistance = 25 * this.DPR;
+        // Allow picking shorter vectors even on high-DPI screens
+        // by keeping the minimum distance independent of DPR.
+        const minVecPickDistance = 10;
 
         if (this.showWeather) {
             const distToW = Math.sqrt((mouseX - this.trueWind.wPos.x)**2 + (mouseY - this.trueWind.wPos.y)**2);
