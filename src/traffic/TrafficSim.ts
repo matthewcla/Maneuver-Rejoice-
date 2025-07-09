@@ -5,11 +5,13 @@ import {
     Encounter,
     mergeEncounters,
 } from './ColregsBias';
+import { ShipDynamics } from '../../Simulator/js/ship-dynamics.js';
 
 export interface Track {
     id: string;
     pos: [number, number];
     vel: [number, number];
+    dyn: ShipDynamics;
     waypoints: [number, number][];
     encounter?: Encounter;
 }
@@ -30,11 +32,13 @@ export interface TrafficSimArgs {
 }
 
 const MPS_TO_NMPS = 1 / 1852;
+const MPS_TO_KTS = 3600 / 1852;
 
 export class TrafficSim {
     private wrapper: OrcaWrapper;
     private tracks: Map<string, Track> = new Map();
     private bias: ColregsBias;
+    private dt: number;
 
     // Minimum allowed CPA distances in simulation units (nautical miles).
     // 1000 yards ~ 0.5 nm, 500 yards ~ 0.25 nm. The `timeHorizon` value passed
@@ -58,6 +62,7 @@ export class TrafficSim {
             args.maxSpeed
         );
         this.bias = new ColregsBias(args.turnRateRadPerSec);
+        this.dt = args.timeStep;
     }
 
     /** Adds a new vessel to the simulation. */
@@ -72,8 +77,20 @@ export class TrafficSim {
         const speedNmps = speedMps * MPS_TO_NMPS;
         const vel: [number, number] = [dir[0] * speedNmps, dir[1] * speedNmps];
 
+        const dyn = new ShipDynamics();
+        dyn.x = startPos[0];
+        dyn.y = startPos[1];
+        dyn.psi = Math.atan2(vel[0], vel[1]);
+        dyn.v = speedMps * MPS_TO_KTS;
+
         this.wrapper.addAgent(id, startPos, vel);
-        this.tracks.set(id, { id, pos: [...startPos] as [number, number], vel, waypoints });
+        this.tracks.set(id, {
+            id,
+            pos: [...startPos] as [number, number],
+            vel,
+            dyn,
+            waypoints,
+        });
     }
 
     /** Main simulation update step. */
@@ -158,10 +175,24 @@ export class TrafficSim {
         // Step the ORCA simulator
         this.wrapper.step();
 
-        // Update tracks from wrapper
+        // Update tracks using ship dynamics to respect physical limits
         for (const t of trackList) {
-            t.vel = this.wrapper.getVelocity(t.id);
-            t.pos = this.wrapper.getPosition(t.id);
+            const orcaVel = this.wrapper.getVelocity(t.id);
+            const desiredHeading = Math.atan2(orcaVel[0], orcaVel[1]);
+            const headingError = desiredHeading - t.dyn.psi;
+            const rudderDegCmd = (headingError * 180) / Math.PI;
+            const speedCmdKts = Math.hypot(orcaVel[0], orcaVel[1]) * 3600;
+
+            t.dyn.update(this.dt, rudderDegCmd, speedCmdKts);
+
+            t.pos = [t.dyn.x, t.dyn.y];
+            const speedNmps = (t.dyn.v / 3600);
+            t.vel = [
+                Math.sin(t.dyn.psi) * speedNmps,
+                Math.cos(t.dyn.psi) * speedNmps,
+            ];
+
+            this.wrapper.setAgentState(t.id, t.pos, t.vel);
         }
     }
 
