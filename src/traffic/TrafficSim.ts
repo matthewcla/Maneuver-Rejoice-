@@ -16,6 +16,12 @@ export interface Track {
 
 export interface TrafficSimArgs {
     timeStep: number;
+    /**
+     * Prediction horizon for the ORCA solver in seconds. It should be long
+     * enough that a vessel travelling at typical speeds (~10 m/s or 20 kts)
+     * covers at least the bow CPA distance. This works out to roughly
+     * 60–120 seconds for the default CPA values.
+     */
     timeHorizon: number;
     neighborDist: number;
     radius: number;
@@ -31,7 +37,10 @@ export class TrafficSim {
     private bias: ColregsBias;
 
     // Minimum allowed CPA distances in simulation units (nautical miles).
-    // 1000 yards ~ 0.5 nm, 500 yards ~ 0.25 nm.
+    // 1000 yards ~ 0.5 nm, 500 yards ~ 0.25 nm. The `timeHorizon` value passed
+    // to the constructor should span enough time for a vessel moving at
+    // ordinary speeds to cover at least CPA_BOW_MIN. At around 10 m/s this
+    // equates to roughly one to two minutes.
     private static readonly CPA_BOW_MIN = 1000 / 1852;
     private static readonly CPA_STERN_MIN = 500 / 1852;
 

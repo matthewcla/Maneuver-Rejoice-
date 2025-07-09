@@ -39,7 +39,7 @@ describe('computeCPA', () => {
     test('returns large time when velocities are parallel', () => {
         const sim = new TrafficSim({
             timeStep: 1,
-            timeHorizon: 5,
+            timeHorizon: 90,
             neighborDist: 10,
             radius: 0.1,
             maxSpeed: 10,
@@ -55,7 +55,7 @@ describe('computeCPA', () => {
     test('computes symmetric approach distance', () => {
         const sim = new TrafficSim({
             timeStep: 1,
-            timeHorizon: 5,
+            timeHorizon: 90,
             neighborDist: 10,
             radius: 0.1,
             maxSpeed: 10,
@@ -70,7 +70,7 @@ describe('computeCPA', () => {
     test('distant CPA yields smaller course correction', () => {
         const args = {
             timeStep: 1,
-            timeHorizon: 5,
+            timeHorizon: 90,
             neighborDist: 10,
             radius: 0.1,
             maxSpeed: 10,
