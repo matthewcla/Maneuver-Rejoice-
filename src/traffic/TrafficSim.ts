@@ -31,10 +31,51 @@ export interface TrafficSimArgs {
 
 const MPS_TO_NMPS = 1 / 1852;
 
+class GridIndex {
+    private buckets: Map<string, Track[]> = new Map();
+    constructor(private cellSize: number) {}
+
+    rebuild(tracks: Track[]): void {
+        this.buckets.clear();
+        for (const t of tracks) {
+            const key = this.key(t.pos);
+            let bucket = this.buckets.get(key);
+            if (!bucket) {
+                bucket = [];
+                this.buckets.set(key, bucket);
+            }
+            bucket.push(t);
+        }
+    }
+
+    query(pos: [number, number]): Track[] {
+        const cx = Math.floor(pos[0] / this.cellSize);
+        const cy = Math.floor(pos[1] / this.cellSize);
+        const result: Track[] = [];
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                const bucket = this.buckets.get(`${cx + dx},${cy + dy}`);
+                if (bucket) {
+                    result.push(...bucket);
+                }
+            }
+        }
+        return result;
+    }
+
+    private key(pos: [number, number]): string {
+        const cx = Math.floor(pos[0] / this.cellSize);
+        const cy = Math.floor(pos[1] / this.cellSize);
+        return `${cx},${cy}`;
+    }
+}
+
 export class TrafficSim {
     private wrapper: OrcaWrapper;
     private tracks: Map<string, Track> = new Map();
     private bias: ColregsBias;
+    private index: GridIndex;
+    private neighborDist: number;
 
     // Minimum allowed CPA distances in simulation units (nautical miles).
     // 1000 yards ~ 0.5 nm, 500 yards ~ 0.25 nm. The `timeHorizon` value passed
@@ -58,6 +99,8 @@ export class TrafficSim {
             args.maxSpeed
         );
         this.bias = new ColregsBias(args.turnRateRadPerSec);
+        this.neighborDist = args.neighborDist;
+        this.index = new GridIndex(this.neighborDist);
     }
 
     /** Adds a new vessel to the simulation. */
@@ -79,6 +122,9 @@ export class TrafficSim {
     /** Main simulation update step. */
     tick(): void {
         const trackList = Array.from(this.tracks.values());
+
+        // Rebuild spatial index with current positions
+        this.index.rebuild(trackList);
 
         // Reset encounters
         for (const t of trackList) {
@@ -119,10 +165,15 @@ export class TrafficSim {
                 }
             }
 
-            // Apply CPA constraints relative to other tracks
+            // Apply CPA constraints relative to nearby tracks
             let push: [number, number] = [0, 0];
-            for (const other of trackList) {
+            for (const other of this.index.query(t.pos)) {
                 if (other === t) continue;
+                const distNow = Math.hypot(
+                    other.pos[0] - t.pos[0],
+                    other.pos[1] - t.pos[1]
+                );
+                if (distNow > this.neighborDist) continue;
                 const { time: tcpa, dist: dcpa } = computeCPA(t, other);
                 if (tcpa < 0) continue;
                 const rel: [number, number] = [other.pos[0] - t.pos[0], other.pos[1] - t.pos[1]];
