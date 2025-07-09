@@ -49,7 +49,7 @@ describe('computeCPA', () => {
         const a: any = { id: 'a', pos: [0, 0], vel: [1, 0], waypoints: [] };
         const b: any = { id: 'b', pos: [1, 0], vel: [1, 0], waypoints: [] };
         const cpa = computeCPA(a, b);
-        expect(cpa.time).toBeGreaterThan(1e8);
+        expect(cpa.time).toBe(Infinity);
     });
 
     test('computes symmetric approach distance', () => {
