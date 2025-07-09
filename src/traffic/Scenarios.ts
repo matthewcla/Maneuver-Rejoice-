@@ -79,8 +79,32 @@ export class Scenarios {
         ],
     };
 
+    /** Moving vessel passing a stationary obstacle. */
+    static stationaryObstacle: Scenario = {
+        name: 'stationaryObstacle',
+        tracks: [
+            {
+                id: 'A',
+                startPos: [0, 0],
+                waypoints: [[10, 0]],
+                speed: 10,
+            },
+            {
+                id: 'B',
+                startPos: [5, 0],
+                waypoints: [[5, 0]],
+                speed: 0,
+            },
+        ],
+    };
+
     /** Returns all available scenarios. */
     static all(): Scenario[] {
-        return [Scenarios.headOn, Scenarios.threeWayCross, Scenarios.overtake];
+        return [
+            Scenarios.headOn,
+            Scenarios.threeWayCross,
+            Scenarios.overtake,
+            Scenarios.stationaryObstacle,
+        ];
     }
 }
