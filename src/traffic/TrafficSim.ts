@@ -308,7 +308,14 @@ export function computeCPA(
     const vy = b.vel[1] - a.vel[1];
 
     const v2 = vx * vx + vy * vy;
-    const t = v2 < 1e-6 ? 1e9 : -((rx * vx + ry * vy) / v2);
+    if (v2 < 1e-6) {
+        // Relative velocity is essentially zero so the separation remains
+        // constant.  Return an infinite time and the current distance to avoid
+        // propagating huge values.
+        return { time: Infinity, dist: Math.hypot(rx, ry) };
+    }
+
+    const t = -((rx * vx + ry * vy) / v2);
     const xCPA = rx + vx * t;
     const yCPA = ry + vy * t;
     const d = Math.hypot(xCPA, yCPA);
