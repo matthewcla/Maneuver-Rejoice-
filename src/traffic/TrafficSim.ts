@@ -23,6 +23,8 @@ export interface TrafficSimArgs {
     turnRateRadPerSec: number;
 }
 
+const MPS_TO_NMPS = 1 / 1852;
+
 export class TrafficSim {
     private wrapper: OrcaWrapper;
     private tracks: Map<string, Track> = new Map();
@@ -53,7 +55,8 @@ export class TrafficSim {
     ): void {
         const wp = waypoints[0] || startPos;
         const dir = this.normalize([wp[0] - startPos[0], wp[1] - startPos[1]]);
-        const vel: [number, number] = [dir[0] * speedMps, dir[1] * speedMps];
+        const speedNmps = speedMps * MPS_TO_NMPS;
+        const vel: [number, number] = [dir[0] * speedNmps, dir[1] * speedNmps];
 
         this.wrapper.addAgent(id, startPos, vel);
         this.tracks.set(id, { id, pos: [...startPos] as [number, number], vel, waypoints });
