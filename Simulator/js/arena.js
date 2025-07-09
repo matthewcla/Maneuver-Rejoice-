@@ -361,6 +361,11 @@ class Simulator {
         this.staticCtx = this.staticCanvas.getContext('2d');
         this.staticDirty = true;
 
+        // Preallocated buffers reused each frame
+        this._visibleTracks = [];
+        this._tmpVec1 = { x: 0, y: 0 };
+        this._tmpVec2 = { x: 0, y: 0 };
+
         // Track whether we've attached DOM event listeners
         this.listenersAttached = false;
 
@@ -405,7 +410,6 @@ class Simulator {
             });
         }
 
-        this.tracks.forEach(t => this.calculateAllData(t));
         this.calculateWindData();
 
         this.updateButtonStyles();
@@ -601,10 +605,9 @@ class Simulator {
         this.markSceneDirty();
     }
 
-    // TODO: Optimize the simulation loop to handle ~50-100 tracks smoothly.
-    // - Avoid creating new objects or strings every frame (reuse them instead).
-    // - Do minimal work for off-screen or non-selected tracks.
-    // - Keep each frame under ~16ms.
+    // Optimized simulation loop for ~50-100 tracks.
+    // Reuses objects and processes only visible or selected tracks
+    // to keep frames under ~16ms.
     // --- Animation & Optimizations ---
 
     gameLoop(timestamp) {
@@ -619,9 +622,9 @@ class Simulator {
         }
 
         if (this.sceneDirty) {
-            this.tracks.forEach(t => this.calculateAllData(t));
+            this.refreshTrackData();
             this.calculateWindData();
-            this.drawRadar();
+            this.drawRadar(this._visibleTracks);
             this.sceneDirty = false;
         }
 
@@ -822,6 +825,29 @@ class Simulator {
         });
     }
 
+    updateBasicGeometry(track) {
+        const v = this._tmpVec1;
+        v.x = track.x - this.ownShip.x;
+        v.y = track.y - this.ownShip.y;
+        track.range = Math.max(0, Math.min(359.9, Math.sqrt(v.x * v.x + v.y * v.y)));
+        track.bearing = (this.toDegrees(Math.atan2(v.x, v.y)) + 360) % 360;
+    }
+
+    refreshTrackData(formatAll = false) {
+        const visible = this._visibleTracks;
+        visible.length = 0;
+        const sel = this.selectedTrackId;
+        const hov = this.hoveredTrackId;
+        for (const t of this.tracks) {
+            this.updateBasicGeometry(t);
+            const inRange = t.range <= this.maxRange;
+            if (formatAll || inRange || t.id === sel || t.id === hov) {
+                this.calculateAllData(t);
+            }
+            if (inRange) visible.push(t);
+        }
+    }
+
     calculateAllData(track) {
         const dx = track.x - this.ownShip.x;
         const dy = track.y - this.ownShip.y;
@@ -915,7 +941,7 @@ class Simulator {
     }
 
     // --- Drawing ---
-    drawRadar() {
+    drawRadar(tracks = this.tracks) {
         const size = this.canvas.width;
         if (size === 0) return;
         const center = size / 2;
@@ -932,8 +958,7 @@ class Simulator {
             this.drawWeatherInfo(center, radius);
         }
         this.drawOwnShipIcon(center, radius);
-        this.tracks.forEach(track => {
-            if (track.range > this.maxRange) return;
+        tracks.forEach(track => {
             this.drawTarget(center, radius, track);
             if(this.showRelativeMotion) {
                 this.drawRelativeMotionVector(center, radius, track);
@@ -1254,7 +1279,9 @@ class Simulator {
     updatePanelsAndRedraw() {
         this.updateOwnShipPanel();
         this.updateDataPanels();
-        this.drawRadar();
+        this.refreshTrackData(true);
+        this.calculateWindData();
+        this.drawRadar(this._visibleTracks);
     }
 
     updateOwnShipPanel() {
@@ -1700,7 +1727,6 @@ class Simulator {
         newTrack._sim = this;
         this.tracks.push(newTrack);
         this.selectedTrackId = newId;
-        this.calculateAllData(newTrack);
         this.updatePanelsAndRedraw();
         this.markSceneDirty();
     }
