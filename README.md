@@ -31,3 +31,18 @@ const sim = new TrafficSim({
     enableCpaPush: true,
 });
 ```
+
+### Large surface ship settings
+
+```ts
+const shipSim = new TrafficSim({
+    timeStep: 1,
+    // 120 s horizon paired with a smaller neighbor distance works well
+    // for large surface vessels.
+    timeHorizon: 120,
+    neighborDist: 4,
+    radius: 0.1,
+    maxSpeed: 10,
+    turnRateRadPerSec: 0.1,
+});
+```
