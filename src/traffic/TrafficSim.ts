@@ -16,6 +16,16 @@ export interface TrafficSimArgs {
   turnRateRad: number;
 }
 
+export const DEFAULT_ARGS: TrafficSimArgs = {
+  laneWidthNm: 0.5,
+  timeStep: 0.25,
+  timeHorizon: 15,
+  neighborDist: 1000,
+  radius: 20,
+  maxSpeed: 15,
+  turnRateRad: Math.PI / 12,
+};
+
 interface Track {
   id: string;
   posXY: [number, number];
@@ -33,19 +43,26 @@ export class TrafficSim {
   private wrapper: OrcaWrapper;
   private tracks = new Map<string, Track>();
   private staticObstacles: { id: string; posXY: [number, number]; radius: number }[] = [];
+  private cpaMap = new Map<string, number>();
+  private args!: TrafficSimArgs;
   private readonly timeStep: number;
   private readonly turnRateRad: number;
 
-  constructor(private args: TrafficSimArgs, scenario?: ScenarioConfig) {
+  constructor(args: TrafficSimArgs | ScenarioConfig = DEFAULT_ARGS, scenario?: ScenarioConfig) {
+    if (scenario === undefined && this.isScenario(args)) {
+      scenario = args;
+      args = DEFAULT_ARGS;
+    }
+    this.args = args as TrafficSimArgs;
     this.wrapper = new OrcaWrapper(
-      args.timeStep,
-      args.timeHorizon,
-      args.neighborDist,
-      args.radius,
-      args.maxSpeed
+      this.args.timeStep,
+      this.args.timeHorizon,
+      this.args.neighborDist,
+      this.args.radius,
+      this.args.maxSpeed
     );
-    this.timeStep = args.timeStep;
-    this.turnRateRad = args.turnRateRad;
+    this.timeStep = this.args.timeStep;
+    this.turnRateRad = this.args.turnRateRad;
 
     if (scenario) {
       for (const m of scenario.mobiles) {
@@ -146,6 +163,8 @@ export class TrafficSim {
         t.posXY[1] + t.velXY[1] * this.timeStep,
       ];
     }
+
+    this.updateCpaMap();
   }
 
   getSnapshot(): { id: string; posLatLon: [number, number]; cog: number; sog: number }[] {
@@ -168,4 +187,43 @@ export class TrafficSim {
   getStaticObstacles(): { id: string; posXY: [number, number]; radius: number }[] {
     return this.staticObstacles.map((o) => ({ id: o.id, posXY: [...o.posXY], radius: o.radius }));
   }
+
+  getEncounterLog(): { ids: [string, string]; cpaMeters: number }[] {
+    const result: { ids: [string, string]; cpaMeters: number }[] = [];
+    for (const [key, val] of this.cpaMap.entries()) {
+      const ids = key.split('|') as [string, string];
+      result.push({ ids, cpaMeters: val });
+    }
+    return result;
+  }
+
+  private isScenario(obj: unknown): obj is ScenarioConfig {
+    return !!obj && typeof obj === 'object' && Array.isArray((obj as any).mobiles) && Array.isArray((obj as any).statics);
+  }
+
+  private updateCpaMap(): void {
+    const list = Array.from(this.tracks.values());
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i];
+      for (let j = i + 1; j < list.length; j++) {
+        const b = list[j];
+        const dist = Math.hypot(a.posXY[0] - b.posXY[0], a.posXY[1] - b.posXY[1]);
+        this.recordCpa(a.id, b.id, dist);
+      }
+      for (const s of this.staticObstacles) {
+        const dist = Math.hypot(a.posXY[0] - s.posXY[0], a.posXY[1] - s.posXY[1]) - s.radius;
+        this.recordCpa(a.id, s.id, dist);
+      }
+    }
+  }
+
+  private recordCpa(id1: string, id2: string, dist: number): void {
+    const key = id1 < id2 ? `${id1}|${id2}` : `${id2}|${id1}`;
+    const cur = this.cpaMap.get(key);
+    if (cur === undefined || dist < cur) {
+      this.cpaMap.set(key, dist);
+    }
+  }
 }
+
+export default TrafficSim;
