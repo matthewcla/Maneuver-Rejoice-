@@ -1625,7 +1625,8 @@ class Simulator {
             if (!vessel.vectorEndpoint) continue;
             const startPt = (vessel.id === 'ownShip') ? {x: center, y: center} : this.getTargetCoords(center, radius, vessel);
             const distFromStart = Math.hypot(mouseX - startPt.x, mouseY - startPt.y);
-            if (distFromStart < minVecPickDistance) continue;
+            const minAllowed = vessel.id === 'ownShip' ? 0 : minVecPickDistance;
+            if (distFromStart < minAllowed) continue;
             const endPt = vessel.vectorEndpoint;
             const dist = this.distToSegment({x: mouseX, y: mouseY}, startPt, endPt);
             if (dist < hitTolerance) return {type: 'vector', id: vessel.id};
