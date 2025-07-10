@@ -10,4 +10,6 @@
   outer segment by 20% while preserving cardinal line lengths.
 - Removed bearing line segments inside the outer range ring so all bearings now
   originate at the ring itself.
+- ORCA max neighbors increased to 15 with neighbor distances reset each step.
+  TODO: enable sector-pruning when more than 50 agents are simulated.
 
