@@ -607,7 +607,12 @@ class Simulator {
         this.updatePhysics(deltaTime);
 
         if (this.isSimulationRunning) {
-            this.simulationElapsed += (deltaTime / 1000) * Math.abs(this.simulationSpeed);
+            const dt = (deltaTime / 1000) * Math.abs(this.simulationSpeed);
+            if (this.simulationSpeed >= 0) {
+                this.simulationElapsed += dt;
+            } else {
+                this.simulationElapsed = Math.max(0, this.simulationElapsed - dt);
+            }
             this.sceneDirty = true;
         }
 
