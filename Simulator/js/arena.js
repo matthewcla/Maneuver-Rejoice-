@@ -1454,6 +1454,11 @@ class Simulator {
                 this.selectedTrackId = item.id;
             }
             this.hoveredTrackId = item.id;
+            if ((item.type === 'icon' || item.type === 'vector') &&
+                item.id !== 'ownShip' && item.id !== 'trueWind') {
+                const track = this.tracks.find(t => t.id === item.id);
+                if (track) track.isUserControlled = true;
+            }
             this.markSceneDirty();
         } else {
             this.pendingDragId = null;
