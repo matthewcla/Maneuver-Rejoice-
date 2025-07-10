@@ -4,6 +4,7 @@ import {
   legalPreferredVelocity,
   Encounter,
 } from './ColregsBias.js';
+import { ScenarioConfig } from './buildScenario.js';
 
 export interface TrafficSimArgs {
   laneWidthNm: number;
@@ -31,10 +32,11 @@ const DEG_PER_M = 1 / (60 * M_PER_NM);
 export class TrafficSim {
   private wrapper: OrcaWrapper;
   private tracks = new Map<string, Track>();
+  private staticObstacles: { id: string; posXY: [number, number]; radius: number }[] = [];
   private readonly timeStep: number;
   private readonly turnRateRad: number;
 
-  constructor(private args: TrafficSimArgs) {
+  constructor(private args: TrafficSimArgs, scenario?: ScenarioConfig) {
     this.wrapper = new OrcaWrapper(
       args.timeStep,
       args.timeHorizon,
@@ -44,6 +46,20 @@ export class TrafficSim {
     );
     this.timeStep = args.timeStep;
     this.turnRateRad = args.turnRateRad;
+
+    if (scenario) {
+      for (const m of scenario.mobiles) {
+        const idLower = m.id.toLowerCase();
+        if (idLower === 'ownship') continue;
+        this.addTrack(m.id, m.start, m.waypoints, m.speedMps);
+      }
+
+      for (const s of scenario.statics) {
+        if (s.id.toLowerCase() === 'ownship') continue;
+        this.wrapper.addAgent(s.id, s.pos, [0, 0]);
+        this.staticObstacles.push({ id: s.id, posXY: [...s.pos], radius: s.radius });
+      }
+    }
   }
 
   addTrack(
@@ -147,5 +163,9 @@ export class TrafficSim {
       result.push({ id: t.id, posLatLon: [lat, lon], cog, sog });
     }
     return result;
+  }
+
+  getStaticObstacles(): { id: string; posXY: [number, number]; radius: number }[] {
+    return this.staticObstacles.map((o) => ({ id: o.id, posXY: [...o.posXY], radius: o.radius }));
   }
 }
