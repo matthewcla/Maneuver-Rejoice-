@@ -1488,6 +1488,17 @@ class Simulator {
                 this.sceneDirty = true;
             }
         }
+
+        if (this.dragType === 'vector' &&
+            this.draggedItemId &&
+            this.draggedItemId !== 'ownShip' &&
+            this.draggedItemId !== 'trueWind') {
+            const track = this.tracks.find(t => t.id === this.draggedItemId);
+            if (track && track._base) {
+                track._base.course = track.course;
+                track._base.speed = track.speed;
+            }
+        }
         this.ownShip.dragCourse = null;
         this.ownShip.dragSpeed = null;
         this.draggedItemId = null;
