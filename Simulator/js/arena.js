@@ -1304,8 +1304,10 @@ class Simulator {
         // this.btnCpa.className = `control-btn ${this.showCPAInfo ? 'selected' : 'unselected'}`;
 
         this.btnPlayPause.className = `sim-control-btn ${this.isSimulationRunning ? 'selected' : 'unselected'}`;
-        this.iconPlay.classList.toggle('d-none', this.isSimulationRunning);
-        this.iconPause.classList.toggle('d-none', !this.isSimulationRunning);
+
+        const showPause = this.isSimulationRunning && this.simulationSpeed === 1;
+        this.iconPlay.classList.toggle('d-none', showPause);
+        this.iconPause.classList.toggle('d-none', !showPause);
 
         this.btnFf.className = `sim-control-btn ${this.simulationSpeed > 1 ? 'selected' : 'unselected'}`;
         this.btnRev.className = `sim-control-btn ${this.simulationSpeed < 0 ? 'selected' : 'unselected'}`;
