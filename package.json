@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "vitest"
+    "test": "vitest",
+    "profile": "tsx scripts/profile.ts"
   },
   "dependencies": {
     "react": "^18.2.0",
