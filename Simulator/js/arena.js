@@ -1475,6 +1475,19 @@ class Simulator {
                 this.ownShip.orderedSpeed = this.ownShip.dragSpeed;
             }
         }
+        if (this.dragType === 'icon' &&
+            this.draggedItemId &&
+            this.draggedItemId !== 'ownShip' &&
+            this.draggedItemId !== 'trueWind') {
+            const track = this.tracks.find(t => t.id === this.draggedItemId);
+            if (track) {
+                const dx = track.x - this.ownShip.x;
+                const dy = track.y - this.ownShip.y;
+                track.initialRange = Math.sqrt(dx * dx + dy * dy);
+                track.initialBearing = (this.toDegrees(Math.atan2(dx, dy)) + 360) % 360;
+                this.sceneDirty = true;
+            }
+        }
         this.ownShip.dragCourse = null;
         this.ownShip.dragSpeed = null;
         this.draggedItemId = null;
