@@ -15,6 +15,11 @@ describe('classifyEncounter', () => {
     expect(classifyEncounter(270)).toBe('crossingPort')
     expect(classifyEncounter(150)).toBe('overtaking')
   })
+
+  test('bearings near 360° are headOn', () => {
+    expect(classifyEncounter(355)).toBe('headOn')
+    expect(classifyEncounter(-5)).toBe('headOn')
+  })
 })
 
 describe('applyColregsBias', () => {
