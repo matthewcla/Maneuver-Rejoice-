@@ -47,10 +47,9 @@ export type Encounter =
 export function classifyEncounter(bearingDeg: number): Encounter {
   // normalize bearing to range [0, 360)
   const beta = ((bearingDeg % 360) + 360) % 360;
-  const abs = Math.abs;
 
   // check head-on condition first
-  if (abs(beta) <= 5 || abs(beta - 180) <= 5) {
+  if (beta <= 5 || beta >= 355 || Math.abs(beta - 180) <= 5) {
     return 'headOn';
   }
 
