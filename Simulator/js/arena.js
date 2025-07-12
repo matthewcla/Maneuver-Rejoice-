@@ -325,6 +325,9 @@ class SimulationEngine {
 class RadarRenderer {
     constructor(sim) {
         this.sim = sim;
+        this.handlePointerDown = this.handlePointerDown.bind(this);
+        this.handlePointerMove = this.handlePointerMove.bind(this);
+        this.handlePointerUp = this.handlePointerUp.bind(this);
     }
 
     drawRadar() {
@@ -560,9 +563,6 @@ class Simulator {
 
         // Bind methods to ensure correct `this` context
         this.gameLoop = this.gameLoop.bind(this);
-        this.handlePointerDown = this.handlePointerDown.bind(this);
-        this.handlePointerUp = this.handlePointerUp.bind(this);
-        this.handlePointerMove = this.handlePointerMove.bind(this);
 
         this._initialize();
     }
@@ -622,11 +622,11 @@ class Simulator {
     _attachEventListeners() {
         // Canvas interaction
         if (window.PointerEvent) {
-            this.canvas?.addEventListener('pointerdown', this.handlePointerDown);
-            this.canvas?.addEventListener('pointerup', this.handlePointerUp);
-            this.canvas?.addEventListener('pointerleave', this.handlePointerUp);
-            this.canvas?.addEventListener('pointercancel', this.handlePointerUp);
-            this.canvas?.addEventListener('pointermove', this.handlePointerMove);
+            this.canvas?.addEventListener('pointerdown', this.renderer.handlePointerDown);
+            this.canvas?.addEventListener('pointerup', this.renderer.handlePointerUp);
+            this.canvas?.addEventListener('pointerleave', this.renderer.handlePointerUp);
+            this.canvas?.addEventListener('pointercancel', this.renderer.handlePointerUp);
+            this.canvas?.addEventListener('pointermove', this.renderer.handlePointerMove);
         } else if ('ontouchstart' in window) {
             const wrap = (handler) => (e) => {
                 const touch = e.touches[0] || e.changedTouches[0];
@@ -639,15 +639,15 @@ class Simulator {
                     pointerType: 'touch'
                 });
             };
-            this.canvas?.addEventListener('touchstart', wrap(this.handlePointerDown));
-            this.canvas?.addEventListener('touchmove', wrap(this.handlePointerMove));
-            this.canvas?.addEventListener('touchend', wrap(this.handlePointerUp));
-            this.canvas?.addEventListener('touchcancel', wrap(this.handlePointerUp));
+            this.canvas?.addEventListener('touchstart', wrap(this.renderer.handlePointerDown));
+            this.canvas?.addEventListener('touchmove', wrap(this.renderer.handlePointerMove));
+            this.canvas?.addEventListener('touchend', wrap(this.renderer.handlePointerUp));
+            this.canvas?.addEventListener('touchcancel', wrap(this.renderer.handlePointerUp));
         } else {
-            this.canvas?.addEventListener('mousedown', this.handlePointerDown);
-            this.canvas?.addEventListener('mouseup', this.handlePointerUp);
-            this.canvas?.addEventListener('mouseleave', this.handlePointerUp);
-            this.canvas?.addEventListener('mousemove', this.handlePointerMove);
+            this.canvas?.addEventListener('mousedown', this.renderer.handlePointerDown);
+            this.canvas?.addEventListener('mouseup', this.renderer.handlePointerUp);
+            this.canvas?.addEventListener('mouseleave', this.renderer.handlePointerUp);
+            this.canvas?.addEventListener('mousemove', this.renderer.handlePointerMove);
         }
 
         // Window resize
@@ -1320,166 +1320,6 @@ class Simulator {
         }
     }
 
-    handlePointerDown(e) {
-        if (e.button !== 0 && e.buttons !== undefined && e.buttons !== 1) return;
-        const rect = this.canvas.getBoundingClientRect();
-        const mouseX = (e.clientX - rect.left) * this.DPR;
-        const mouseY = (e.clientY - rect.top) * this.DPR;
-        const item = this.getInteractiveItemAt(mouseX, mouseY);
-        this.pointerDownPos = { x: mouseX, y: mouseY };
-        if (item) {
-            this.canvas.style.cursor = 'grabbing';
-            this.pendingDragId = item.id;
-            this.pendingDragType = item.type;
-            this.lastMousePos = { x: mouseX, y: mouseY };
-            if (item.id !== 'ownShip' && item.id !== 'trueWind') {
-                this.selectedTrackId = item.id;
-            }
-            this.hoveredTrackId = item.id;
-            if ((item.type === 'icon' || item.type === 'vector') &&
-                item.id !== 'ownShip' && item.id !== 'trueWind') {
-                const track = this.tracks.find(t => t.id === item.id);
-                if (track) track.isUserControlled = true;
-            }
-            this.markSceneDirty();
-        } else {
-            this.pendingDragId = null;
-            this.pendingDragType = null;
-            this.hoveredTrackId = null;
-        }
-    }
-
-    handlePointerUp() {
-        this.canvas.style.cursor = 'grab';
-        if (this.draggedItemId === 'ownShip' && this.dragType === 'vector') {
-            if (this.ownShip.dragCourse !== null && this.ownShip.dragSpeed !== null) {
-                this.ownShip.orderedCourse = this.ownShip.dragCourse;
-                this.ownShip.orderedSpeed = this.ownShip.dragSpeed;
-            }
-        }
-        if (this.dragType === 'icon' &&
-            this.draggedItemId &&
-            this.draggedItemId !== 'ownShip' &&
-            this.draggedItemId !== 'trueWind') {
-            const track = this.tracks.find(t => t.id === this.draggedItemId);
-            if (track) {
-                const dx = track.x - this.ownShip.x;
-                const dy = track.y - this.ownShip.y;
-                track.initialRange = Math.sqrt(dx * dx + dy * dy);
-                track.initialBearing = (this.toDegrees(Math.atan2(dx, dy)) + 360) % 360;
-                this.sceneDirty = true;
-            }
-        }
-
-        if (this.dragType === 'vector' &&
-            this.draggedItemId &&
-            this.draggedItemId !== 'ownShip' &&
-            this.draggedItemId !== 'trueWind') {
-            const track = this.tracks.find(t => t.id === this.draggedItemId);
-            if (track && track._base) {
-                track._base.course = track.course;
-                track._base.speed = track.speed;
-            }
-        }
-        this.ownShip.dragCourse = null;
-        this.ownShip.dragSpeed = null;
-        this.draggedItemId = null;
-        this.dragType = null;
-        this.pendingDragId = null;
-        this.pendingDragType = null;
-        this.dragTooltip.style.display = 'none';
-        this.orderTooltip.style.display = 'none';
-        this.markSceneDirty();
-    }
-
-    handlePointerMove(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const mouseX = (e.clientX - rect.left) * this.DPR;
-        const mouseY = (e.clientY - rect.top) * this.DPR;
-
-        if (this.pendingDragId && !this.draggedItemId) {
-            const dx0 = mouseX - this.pointerDownPos.x;
-            const dy0 = mouseY - this.pointerDownPos.y;
-            if (Math.hypot(dx0, dy0) > this.dragThreshold) {
-                this.draggedItemId = this.pendingDragId;
-                this.dragType = this.pendingDragType;
-                if (this.draggedItemId === 'ownShip' && this.dragType === 'vector') {
-                    this.ownShip.dragCourse = this.ownShip.orderedCourse;
-                    this.ownShip.dragSpeed = this.ownShip.orderedSpeed;
-                }
-            }
-        }
-
-        if (this.draggedItemId) {
-            this.updateDragTooltip(e);
-            const center = this.canvas.width / 2;
-            const pixelsPerNm = (center * 0.9) / this.maxRange;
-            if (this.draggedItemId === 'trueWind') {
-                const dx = mouseX - center;
-                const dy = -(mouseY - center);
-                const newCanvasAngleRad = Math.atan2(dy, dx);
-                if (this.dragType === 'windDirection') {
-                    this.trueWind.direction = this.canvasAngleToBearing(this.toDegrees(newCanvasAngleRad));
-                } else if (this.dragType === 'windSpeed') {
-                    const pixelsPerKnot = 4;
-                    const windFromAngle = this.toRadians(this.bearingToCanvasAngle(this.trueWind.direction));
-                    const radius = center * 0.9;
-                    const mouseVecX = mouseX - center;
-                    const mouseVecY = -(mouseY - center);
-                    const windVecX = Math.cos(windFromAngle);
-                    const windVecY = Math.sin(windFromAngle);
-                    const projectedLength = mouseVecX * windVecX + mouseVecY * windVecY;
-                    const arrowPixelLength = projectedLength - radius;
-                    this.trueWind.speed = Math.max(0, -arrowPixelLength / pixelsPerKnot);
-                }
-                this.markSceneDirty();
-            } else if (this.dragType === 'icon') {
-                const track = this.tracks.find(t => t.id === this.draggedItemId);
-                if (track) {
-                    const deltaX_pixels = mouseX - this.lastMousePos.x;
-                    const deltaY_pixels = mouseY - this.lastMousePos.y;
-                    const deltaX_nm = deltaX_pixels / pixelsPerNm;
-                    const deltaY_nm = deltaY_pixels / pixelsPerNm;
-                    track.x += deltaX_nm;
-                    track.y -= deltaY_nm;
-                    this.markSceneDirty();
-                }
-            } else if (this.dragType === 'vector') {
-                const timeInHours = this.vectorTimeInMinutes / 60;
-                const vessel = (this.draggedItemId === 'ownShip') ? this.ownShip : this.tracks.find(t => t.id === this.draggedItemId);
-                const startPoint = (vessel.id === 'ownShip') ? { x: center, y: center } : this.getTargetCoords(center, (center * 0.9), vessel);
-
-                const dx = mouseX - startPoint.x;
-                const dy = -(mouseY - startPoint.y);
-
-                const newCanvasAngleRad = Math.atan2(dy, dx);
-                const newCourse = this.canvasAngleToBearing(this.toDegrees(newCanvasAngleRad));
-                const distOnCanvas = Math.sqrt(dx * dx + dy * dy);
-                const newSpeed = distOnCanvas / pixelsPerNm / timeInHours;
-
-                if (vessel.id === 'ownShip') {
-                    this.ownShip.dragCourse = newCourse;
-                    this.ownShip.dragSpeed = Math.max(0, newSpeed);
-                } else {
-                    vessel.course = newCourse;
-                    vessel.speed = Math.max(2, newSpeed);
-                }
-                this.markSceneDirty();
-            }
-            this.lastMousePos = { x: mouseX, y: mouseY };
-        } else {
-            let item = null;
-            if (!this.pendingDragId) {
-                item = this.getInteractiveItemAt(mouseX, mouseY);
-                this.canvas.style.cursor = item ? 'grab' : 'default';
-            }
-            const newHoverId = item ? item.id : null;
-            if (newHoverId !== this.hoveredTrackId) {
-                this.hoveredTrackId = newHoverId;
-                this.markSceneDirty();
-            }
-        }
-    }
 
     getInteractiveItemAt(mouseX, mouseY) {
         const center = this.canvas.width / 2;
@@ -1741,6 +1581,147 @@ class Simulator {
         let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
         t = Math.max(0, Math.min(1, t));
         return Math.sqrt((p.x - (v.x + t * (w.x - v.x)))**2 + (p.y - (v.y + t * (w.y - v.y)))**2);
+    }
+
+    handlePointerDown(e) {
+        if (e.button !== 0 && e.buttons !== undefined && e.buttons !== 1) return;
+        const rect = this.sim.canvas.getBoundingClientRect();
+        const mouseX = (e.clientX - rect.left) * this.sim.DPR;
+        const mouseY = (e.clientY - rect.top) * this.sim.DPR;
+        const item = this.sim.getInteractiveItemAt(mouseX, mouseY);
+        this.sim.pointerDownPos = { x: mouseX, y: mouseY };
+        if (item) {
+            this.sim.canvas.style.cursor = 'grabbing';
+            this.sim.pendingDragId = item.id;
+            this.sim.pendingDragType = item.type;
+            this.sim.lastMousePos = { x: mouseX, y: mouseY };
+            if (item.id !== 'ownShip' && item.id !== 'trueWind') {
+                this.sim.selectedTrackId = item.id;
+            }
+            this.sim.hoveredTrackId = item.id;
+            if ((item.type === 'icon' || item.type === 'vector') &&
+                item.id !== 'ownShip' && item.id !== 'trueWind') {
+                const t = this.sim.engine.tracks.find(t => t.id === item.id);
+                if (t) t.isUserControlled = true;
+            }
+            this.sim.markSceneDirty();
+        } else {
+            this.sim.pendingDragId = null;
+            this.sim.pendingDragType = null;
+            this.sim.hoveredTrackId = null;
+        }
+    }
+
+    handlePointerUp() {
+        this.sim.canvas.style.cursor = 'grab';
+        if (this.sim.draggedItemId === 'ownShip' && this.sim.dragType === 'vector') {
+            this.sim.engine.commitOwnShipDrag();
+        }
+        if (this.sim.dragType === 'icon' &&
+            this.sim.draggedItemId &&
+            this.sim.draggedItemId !== 'ownShip' &&
+            this.sim.draggedItemId !== 'trueWind') {
+            this.sim.engine.recordInitialPlacement(this.sim.draggedItemId);
+            this.sim.sceneDirty = true;
+        }
+        if (this.sim.dragType === 'vector' &&
+            this.sim.draggedItemId &&
+            this.sim.draggedItemId !== 'ownShip' &&
+            this.sim.draggedItemId !== 'trueWind') {
+            this.sim.engine.recordBaseVector(this.sim.draggedItemId);
+        }
+        this.sim.draggedItemId = null;
+        this.sim.dragType = null;
+        this.sim.pendingDragId = null;
+        this.sim.pendingDragType = null;
+        this.sim.dragTooltip.style.display = 'none';
+        this.sim.orderTooltip.style.display = 'none';
+        this.sim.markSceneDirty();
+    }
+
+    handlePointerMove(e) {
+        const rect = this.sim.canvas.getBoundingClientRect();
+        const mouseX = (e.clientX - rect.left) * this.sim.DPR;
+        const mouseY = (e.clientY - rect.top) * this.sim.DPR;
+
+        if (this.sim.pendingDragId && !this.sim.draggedItemId) {
+            const dx0 = mouseX - this.sim.pointerDownPos.x;
+            const dy0 = mouseY - this.sim.pointerDownPos.y;
+            if (Math.hypot(dx0, dy0) > this.sim.dragThreshold) {
+                this.sim.draggedItemId = this.sim.pendingDragId;
+                this.sim.dragType = this.sim.pendingDragType;
+                if (this.sim.draggedItemId === 'ownShip' && this.sim.dragType === 'vector') {
+                    this.sim.engine.setOwnShipDrag(this.sim.engine.ownShip.orderedCourse,
+                        this.sim.engine.ownShip.orderedSpeed);
+                }
+            }
+        }
+
+        if (this.sim.draggedItemId) {
+            this.sim.updateDragTooltip(e);
+            const center = this.sim.canvas.width / 2;
+            const pixelsPerNm = (center * 0.9) / this.sim.maxRange;
+            if (this.sim.draggedItemId === 'trueWind') {
+                const dx = mouseX - center;
+                const dy = -(mouseY - center);
+                const newCanvasAngleRad = Math.atan2(dy, dx);
+                if (this.sim.dragType === 'windDirection') {
+                    this.sim.trueWind.direction = this.sim.canvasAngleToBearing(this.sim.toDegrees(newCanvasAngleRad));
+                } else if (this.sim.dragType === 'windSpeed') {
+                    const pixelsPerKnot = 4;
+                    const windFromAngle = this.sim.toRadians(this.sim.bearingToCanvasAngle(this.sim.trueWind.direction));
+                    const radius = center * 0.9;
+                    const mouseVecX = mouseX - center;
+                    const mouseVecY = -(mouseY - center);
+                    const windVecX = Math.cos(windFromAngle);
+                    const windVecY = Math.sin(windFromAngle);
+                    const projectedLength = mouseVecX * windVecX + mouseVecY * windVecY;
+                    const arrowPixelLength = projectedLength - radius;
+                    this.sim.trueWind.speed = Math.max(0, -arrowPixelLength / pixelsPerKnot);
+                }
+                this.sim.markSceneDirty();
+            } else if (this.sim.dragType === 'icon') {
+                const deltaX_pixels = mouseX - this.sim.lastMousePos.x;
+                const deltaY_pixels = mouseY - this.sim.lastMousePos.y;
+                const deltaX_nm = deltaX_pixels / pixelsPerNm;
+                const deltaY_nm = deltaY_pixels / pixelsPerNm;
+                this.sim.engine.moveTrack(this.sim.draggedItemId, deltaX_nm, -deltaY_nm);
+                this.sim.markSceneDirty();
+            } else if (this.sim.dragType === 'vector') {
+                const timeInHours = this.sim.vectorTimeInMinutes / 60;
+                const vessel = (this.sim.draggedItemId === 'ownShip')
+                    ? this.sim.engine.ownShip
+                    : this.sim.engine.tracks.find(t => t.id === this.sim.draggedItemId);
+                const startPoint = (vessel.id === 'ownShip') ? { x: center, y: center } : this.sim.getTargetCoords(center, (center * 0.9), vessel);
+
+                const dx = mouseX - startPoint.x;
+                const dy = -(mouseY - startPoint.y);
+
+                const newCanvasAngleRad = Math.atan2(dy, dx);
+                const newCourse = this.sim.canvasAngleToBearing(this.sim.toDegrees(newCanvasAngleRad));
+                const distOnCanvas = Math.sqrt(dx * dx + dy * dy);
+                const newSpeed = distOnCanvas / pixelsPerNm / timeInHours;
+
+                if (vessel.id === 'ownShip') {
+                    this.sim.engine.setOwnShipDrag(newCourse, Math.max(0, newSpeed));
+                } else if (vessel) {
+                    this.sim.engine.updateTrackVector(vessel.id, newCourse, newSpeed);
+                }
+                this.sim.markSceneDirty();
+            }
+            this.sim.lastMousePos = { x: mouseX, y: mouseY };
+        } else {
+            let item = null;
+            if (!this.sim.pendingDragId) {
+                item = this.sim.getInteractiveItemAt(mouseX, mouseY);
+                this.sim.canvas.style.cursor = item ? 'grab' : 'default';
+            }
+            const newHoverId = item ? item.id : null;
+            if (newHoverId !== this.sim.hoveredTrackId) {
+                this.sim.hoveredTrackId = newHoverId;
+                this.sim.markSceneDirty();
+            }
+        }
     }
     prepareStaticStyles() {
         this.ctx.strokeStyle = this.radarFaintGreen;
