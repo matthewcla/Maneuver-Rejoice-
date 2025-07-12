@@ -1,0 +1,23 @@
+{
+  "name": "maneuver-workspace",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "test": "vitest",
+    "profile": "tsx scripts/profile.ts"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "rvo2": "^0.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.0",
+    "vite": "^5.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "vitest": "^0.34.0",
+    "@vitejs/plugin-react": "^4.0.0"
+  }
+}

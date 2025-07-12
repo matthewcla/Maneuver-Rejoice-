@@ -607,7 +607,12 @@ class Simulator {
         this.updatePhysics(deltaTime);
 
         if (this.isSimulationRunning) {
-            this.simulationElapsed += (deltaTime / 1000) * Math.abs(this.simulationSpeed);
+            const dt = (deltaTime / 1000) * Math.abs(this.simulationSpeed);
+            if (this.simulationSpeed >= 0) {
+                this.simulationElapsed += dt;
+            } else {
+                this.simulationElapsed = Math.max(0, this.simulationElapsed - dt);
+            }
             this.sceneDirty = true;
         }
 
@@ -1299,8 +1304,10 @@ class Simulator {
         // this.btnCpa.className = `control-btn ${this.showCPAInfo ? 'selected' : 'unselected'}`;
 
         this.btnPlayPause.className = `sim-control-btn ${this.isSimulationRunning ? 'selected' : 'unselected'}`;
-        this.iconPlay.classList.toggle('d-none', this.isSimulationRunning);
-        this.iconPause.classList.toggle('d-none', !this.isSimulationRunning);
+
+        const showPause = this.isSimulationRunning && this.simulationSpeed === 1;
+        this.iconPlay.classList.toggle('d-none', showPause);
+        this.iconPause.classList.toggle('d-none', !showPause);
 
         this.btnFf.className = `sim-control-btn ${this.simulationSpeed > 1 ? 'selected' : 'unselected'}`;
         this.btnRev.className = `sim-control-btn ${this.simulationSpeed < 0 ? 'selected' : 'unselected'}`;
@@ -1447,6 +1454,11 @@ class Simulator {
                 this.selectedTrackId = item.id;
             }
             this.hoveredTrackId = item.id;
+            if ((item.type === 'icon' || item.type === 'vector') &&
+                item.id !== 'ownShip' && item.id !== 'trueWind') {
+                const track = this.tracks.find(t => t.id === item.id);
+                if (track) track.isUserControlled = true;
+            }
             this.markSceneDirty();
         } else {
             this.pendingDragId = null;
@@ -1462,6 +1474,37 @@ class Simulator {
                 this.ownShip.orderedCourse = this.ownShip.dragCourse;
                 this.ownShip.orderedSpeed = this.ownShip.dragSpeed;
             }
+        }
+        if (this.dragType === 'icon' &&
+            this.draggedItemId &&
+            this.draggedItemId !== 'ownShip' &&
+            this.draggedItemId !== 'trueWind') {
+            const track = this.tracks.find(t => t.id === this.draggedItemId);
+            if (track) {
+                const dx = track.x - this.ownShip.x;
+                const dy = track.y - this.ownShip.y;
+                track.initialRange = Math.sqrt(dx * dx + dy * dy);
+                track.initialBearing = (this.toDegrees(Math.atan2(dx, dy)) + 360) % 360;
+                this.sceneDirty = true;
+            }
+        }
+
+        if (this.dragType === 'vector' &&
+            this.draggedItemId &&
+            this.draggedItemId !== 'ownShip' &&
+            this.draggedItemId !== 'trueWind') {
+            const track = this.tracks.find(t => t.id === this.draggedItemId);
+            if (track && track._base) {
+                track._base.course = track.course;
+                track._base.speed = track.speed;
+            }
+        }
+
+        if (this.draggedItemId &&
+            this.draggedItemId !== 'ownShip' &&
+            this.draggedItemId !== 'trueWind') {
+            const track = this.tracks.find(t => t.id === this.draggedItemId);
+            if (track) track.isUserControlled = false;
         }
         this.ownShip.dragCourse = null;
         this.ownShip.dragSpeed = null;
@@ -1589,7 +1632,8 @@ class Simulator {
             if (!vessel.vectorEndpoint) continue;
             const startPt = (vessel.id === 'ownShip') ? {x: center, y: center} : this.getTargetCoords(center, radius, vessel);
             const distFromStart = Math.hypot(mouseX - startPt.x, mouseY - startPt.y);
-            if (distFromStart < minVecPickDistance) continue;
+            const minAllowed = vessel.id === 'ownShip' ? 0 : minVecPickDistance;
+            if (distFromStart < minAllowed) continue;
             const endPt = vessel.vectorEndpoint;
             const dist = this.distToSegment({x: mouseX, y: mouseY}, startPt, endPt);
             if (dist < hitTolerance) return {type: 'vector', id: vessel.id};
