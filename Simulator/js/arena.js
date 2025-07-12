@@ -1499,6 +1499,13 @@ class Simulator {
                 track._base.speed = track.speed;
             }
         }
+
+        if (this.draggedItemId &&
+            this.draggedItemId !== 'ownShip' &&
+            this.draggedItemId !== 'trueWind') {
+            const track = this.tracks.find(t => t.id === this.draggedItemId);
+            if (track) track.isUserControlled = false;
+        }
         this.ownShip.dragCourse = null;
         this.ownShip.dragSpeed = null;
         this.draggedItemId = null;
