@@ -1,9 +1,33 @@
 export interface BiasSettings {
+  /**
+   * How strongly to bias toward the legally preferred maneuver.
+   * A value of 0 returns the original velocity while 1 applies the
+   * full COLREGS turn or speed reduction.
+   */
   aggressiveness: number;
 }
 
-export function applyColregsBias(speed: number, bias: BiasSettings): number {
-  return speed * (1 - bias.aggressiveness);
+/**
+ * Blend the current desired velocity with the maneuver required by COLREGS.
+ *
+ * @param enc          Encounter classification relative to the other vessel.
+ * @param curVel       Current desired velocity vector in meters per second.
+ * @param turnRateRad  Maximum permitted turn rate in radians.
+ * @param bias         Aggressiveness of the maneuver from 0 to 1.
+ * @returns Adjusted velocity respecting COLREGS.
+ */
+export function applyColregsBias(
+  enc: Encounter,
+  curVel: [number, number],
+  turnRateRad: number,
+  bias: BiasSettings
+): [number, number] {
+  const legal = legalPreferredVelocity(enc, curVel, turnRateRad);
+  const a = Math.min(Math.max(bias.aggressiveness, 0), 1);
+  return [
+    curVel[0] * (1 - a) + legal[0] * a,
+    curVel[1] * (1 - a) + legal[1] * a,
+  ];
 }
 
 export type Encounter =
