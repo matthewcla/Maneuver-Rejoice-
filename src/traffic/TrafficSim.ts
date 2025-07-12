@@ -129,15 +129,27 @@ export class TrafficSim {
 
   tick(): void {
     const list = Array.from(this.tracks.values());
-    // classify encounters
+    // reset encounter classifications
+    for (const t of list) t.encounter = 'none';
+    // classify encounters and keep the most severe for each track
+    const priority: Record<Encounter, number> = {
+      headOn: 3,
+      crossingStarboard: 2,
+      crossingPort: 2,
+      overtaking: 1,
+      none: 0,
+    };
+    const select = (cur: Encounter, next: Encounter): Encounter =>
+      priority[next] > priority[cur] ? next : cur;
+
     for (let i = 0; i < list.length; i++) {
       const a = list[i];
       for (let j = i + 1; j < list.length; j++) {
         const b = list[j];
         const encA = classifyEncounter(this.relativeBearing(a, b));
         const encB = classifyEncounter(this.relativeBearing(b, a));
-        a.encounter = encA;
-        b.encounter = encB;
+        a.encounter = select(a.encounter!, encA);
+        b.encounter = select(b.encounter!, encB);
       }
     }
 
