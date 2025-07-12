@@ -20,4 +20,12 @@ Before running the unit tests, install dependencies with:
 npm install
 ```
 
-Then execute the test suite using `npm test`.
+The install step pulls in all dependencies including `rvo2` and `vitest`.
+After installation, run the test suite with:
+
+```bash
+npm test
+```
+
+Continuous integration runs `npm ci` followed by `npm test`, so the same
+dependencies are installed in CI.
