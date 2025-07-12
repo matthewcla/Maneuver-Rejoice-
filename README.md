@@ -11,3 +11,13 @@ When viewed on mobile, rotate to landscape orientation for the best experience. 
 - ORCA max neighbors are set to 15 and neighbor distances refreshed before each simulation step. For scenarios with more than 50 agents, switch to sector-pruning (TODO).
 
 [![traffic-sim-ci](https://github.com/<USER>/<REPO>/actions/workflows/traffic.yml/badge.svg)](https://github.com/<USER>/<REPO>/actions/workflows/traffic.yml)
+
+## Running Tests
+
+Before running the unit tests, install dependencies with:
+
+```bash
+npm install
+```
+
+Then execute the test suite using `npm test`.
